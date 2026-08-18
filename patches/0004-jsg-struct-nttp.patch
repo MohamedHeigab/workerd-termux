@@ -1,59 +1,124 @@
+diff --git a/src/workerd/api/actor-state.h b/src/workerd/api/actor-state.h
+index 7e25600..9156a12 100644
+--- a/src/workerd/api/actor-state.h
++++ b/src/workerd/api/actor-state.h
+@@ -449,7 +449,34 @@ class DurableObjectFacets: public jsg::Object {
+     // Value to expose as `ctx.id` in the facet.
+     jsg::Optional<kj::OneOf<jsg::Ref<DurableObjectId>, kj::String>> id;
+ 
+-    JSG_STRUCT($class, id);
++    static constexpr ::workerd::jsg::JsgKind JSG_KIND KJ_UNUSED = ::workerd::jsg::JsgKind::STRUCT;
++    static constexpr char $class_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "class",
++                          id_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "id";
++    template <typename TypeWrapper, typename Self>
++    using JsgFieldWrappers = ::workerd::jsg::TypeTuple<
++        ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().$class), &Self::$class, $class_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++        ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().id), &Self::id, id_JSG_NAME_DO_NOT_USE_DIRECTLY>>;
++    template <typename Self>
++    static v8::Local<v8::DictionaryTemplate> jsgGetTemplate(v8::Isolate* isolate) {
++      kj::Vector<std::string_view> names;
++      ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().$class), $class_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++      ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().id), id_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++      auto namesPtr = names.asPtr().asConst();
++      return v8::DictionaryTemplate::New(isolate, std::span<const std::string_view>(namesPtr.begin(), namesPtr.size()));
++    }
++    template <typename Registry, typename Self, typename Config>
++    static void registerMembersInternal(Registry& registry, Config arg) {
++      registry.template registerStructProperty<decltype(::kj::instance<Self>().$class), &Self::$class>($class_JSG_NAME_DO_NOT_USE_DIRECTLY);
++      registry.template registerStructProperty<decltype(::kj::instance<Self>().id), &Self::id>(id_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    }
++    template <typename Registry, typename Self>
++    static void registerMembers(Registry& registry) requires(!jsg::HasConfiguration<Self>) {
++      registerMembersInternal<Registry, Self, void*>(registry, nullptr);
++    }
++    template <typename Registry, typename Self>
++    static void registerMembers(Registry& registry, jsg::GetConfiguration<Self> arg) requires jsg::HasConfiguration<Self> {
++      registerMembersInternal<Registry, Self, jsg::GetConfiguration<Self>>(registry, arg);
++    }
+ 
+     JSG_STRUCT_TS_OVERRIDE(FacetStartupOptions<
+         T extends Rpc.DurableObjectBranded | undefined = undefined> {
+diff --git a/src/workerd/api/container.h b/src/workerd/api/container.h
+index 8684b56..120b570 100644
+--- a/src/workerd/api/container.h
++++ b/src/workerd/api/container.h
+@@ -79,7 +79,58 @@ struct ExecOptions {
+   // an object may additionally specify initial `cols`/`rows`. Absent or `false` means no PTY.
+   jsg::Optional<kj::OneOf<bool, ExecPtyOptions>> pty;
+ 
+-  JSG_STRUCT($stdin, $stdout, $stderr, cwd, env, user, signal, pty);
++  static constexpr ::workerd::jsg::JsgKind JSG_KIND KJ_UNUSED = ::workerd::jsg::JsgKind::STRUCT;
++  static constexpr char $stdin_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "stdin",
++                        $stdout_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "stdout",
++                        $stderr_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "stderr",
++                        cwd_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "cwd",
++                        env_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "env",
++                        user_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "user",
++                        signal_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "signal",
++                        pty_JSG_NAME_DO_NOT_USE_DIRECTLY[] = "pty";
++  template <typename TypeWrapper, typename Self>
++  using JsgFieldWrappers = ::workerd::jsg::TypeTuple<
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().$stdin), &Self::$stdin, $stdin_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().$stdout), &Self::$stdout, $stdout_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().$stderr), &Self::$stderr, $stderr_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().cwd), &Self::cwd, cwd_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().env), &Self::env, env_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().user), &Self::user, user_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().signal), &Self::signal, signal_JSG_NAME_DO_NOT_USE_DIRECTLY>,
++      ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().pty), &Self::pty, pty_JSG_NAME_DO_NOT_USE_DIRECTLY>>;
++  template <typename Self>
++  static v8::Local<v8::DictionaryTemplate> jsgGetTemplate(v8::Isolate* isolate) {
++    kj::Vector<std::string_view> names;
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().$stdin), $stdin_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().$stdout), $stdout_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().$stderr), $stderr_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().cwd), cwd_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().env), env_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().user), user_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().signal), signal_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().pty), pty_JSG_NAME_DO_NOT_USE_DIRECTLY>(names);
++    auto namesPtr = names.asPtr().asConst();
++    return v8::DictionaryTemplate::New(isolate, std::span<const std::string_view>(namesPtr.begin(), namesPtr.size()));
++  }
++  template <typename Registry, typename Self, typename Config>
++  static void registerMembersInternal(Registry& registry, Config arg) {
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().$stdin), &Self::$stdin>($stdin_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().$stdout), &Self::$stdout>($stdout_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().$stderr), &Self::$stderr>($stderr_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().cwd), &Self::cwd>(cwd_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().env), &Self::env>(env_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().user), &Self::user>(user_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().signal), &Self::signal>(signal_JSG_NAME_DO_NOT_USE_DIRECTLY);
++    registry.template registerStructProperty<decltype(::kj::instance<Self>().pty), &Self::pty>(pty_JSG_NAME_DO_NOT_USE_DIRECTLY);
++  }
++  template <typename Registry, typename Self>
++  static void registerMembers(Registry& registry) requires(!jsg::HasConfiguration<Self>) {
++    registerMembersInternal<Registry, Self, void*>(registry, nullptr);
++  }
++  template <typename Registry, typename Self>
++  static void registerMembers(Registry& registry, jsg::GetConfiguration<Self> arg) requires jsg::HasConfiguration<Self> {
++    registerMembersInternal<Registry, Self, jsg::GetConfiguration<Self>>(registry, arg);
++  }
+   JSG_STRUCT_TS_OVERRIDE(ContainerExecOptions {
+     stdin?: ReadableStream | "pipe";
+     stdout?: "pipe" | "ignore";
 diff --git a/src/workerd/jsg/jsg.h b/src/workerd/jsg/jsg.h
-index 8f9483f..e9eaadf 100644
+index 8f9483f..1c4e26b 100644
 --- a/src/workerd/jsg/jsg.h
 +++ b/src/workerd/jsg/jsg.h
-@@ -743,7 +743,7 @@ concept HasStructTypeScriptDefine = requires { T::_JSG_STRUCT_TS_DEFINE_DO_NOT_U
- // first '$' gets stripped.
- #define JSG_STRUCT(...)                                                                            \
-   static constexpr ::workerd::jsg::JsgKind JSG_KIND KJ_UNUSED = ::workerd::jsg::JsgKind::STRUCT;   \
--  static constexpr char JSG_FOR_EACH(JSG_STRUCT_FIELD_NAME, , __VA_ARGS__);                        \
-+  static constexpr auto JSG_FOR_EACH(JSG_STRUCT_FIELD_NAME, , __VA_ARGS__);                        \
-   template <typename TypeWrapper, typename Self>                                                   \
-   using JsgFieldWrappers =                                                                         \
-       ::workerd::jsg::TypeTuple<JSG_FOR_EACH(JSG_STRUCT_FIELD, , __VA_ARGS__)>;                    \
-@@ -787,29 +787,38 @@ concept HasStructTypeScriptDefine = requires { T::_JSG_STRUCT_TS_DEFINE_DO_NOT_U
-     registerMembersInternal<Registry, Self, jsg::GetConfiguration<Self>>(registry, arg);           \
-   }
- 
-+template <size_t N>
-+struct StrippedNameHolder {
-+  char value[N]{};
-+  constexpr StrippedNameHolder(const char (&str)[N]) {
-+    size_t offset = (str[0] == '$' ? 1 : 0);
-+    for (size_t i = 0; i < N - offset; ++i) {
-+      value[i] = str[i + offset];
-+    }
-+  }
-+};
-+
- template <size_t N>
- inline consteval size_t prefixLengthToStrip(const char (&s)[N]) {
-   return s[0] == '$' ? 1 : 0;
- }
- 
--// This string may not be what's actually exported to v8. For example, if it starts with a `$`, then
--// this value will still contain the `$` even though the `FieldWrapper` template argument will have
--// it stripped.
--#define JSG_STRUCT_FIELD_NAME(_, name) name##_JSG_NAME_DO_NOT_USE_DIRECTLY[] = #name
-+#define JSG_STRUCT_FIELD_NAME(_, name)                                                             \
-+  name##_JSG_NAME_DO_NOT_USE_DIRECTLY = ::workerd::jsg::StrippedNameHolder(#name)
+@@ -799,13 +799,13 @@ inline consteval size_t prefixLengthToStrip(const char (&s)[N]) {
  
  #define JSG_STRUCT_FIELD_COL(_, name)                                                              \
    ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().name),                       \
 -      name##_JSG_NAME_DO_NOT_USE_DIRECTLY + ::workerd::jsg::prefixLengthToStrip(#name)>(names)
-+      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value>(names)
++      name##_JSG_NAME_DO_NOT_USE_DIRECTLY>(names)
  
  // (Internal implementation details for JSG_STRUCT.)
  #define JSG_STRUCT_FIELD(_, name)                                                                  \
    ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().name),           \
        &Self::name,                                                                                 \
 -      name##_JSG_NAME_DO_NOT_USE_DIRECTLY + ::workerd::jsg::prefixLengthToStrip(#name)>
-+      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value>
++      name##_JSG_NAME_DO_NOT_USE_DIRECTLY>
  // (Internal implementation details for JSG_STRUCT.)
  #define JSG_STRUCT_REGISTER_MEMBER(_, name)                                                        \
    registry.template registerStructProperty<decltype(::kj::instance<Self>().name), &Self::name>(    \
--      name##_JSG_NAME_DO_NOT_USE_DIRECTLY)
-+      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value)
- 
- // Indexes for adding API data to V8's Isolate object.
- enum SetDataIndex {
