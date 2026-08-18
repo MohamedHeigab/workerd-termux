@@ -2,8 +2,8 @@
 Custom CC Toolchain configuration for Android Bionic (Termux)
 """
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc:cc_toolchain_config_lib.bzl",
-    "create_cc_toolchain_config_info",
     "feature",
     "flag_group",
     "flag_set",
@@ -139,7 +139,7 @@ def _impl(ctx):
         ),
     ]
 
-    return create_cc_toolchain_config_info(
+    return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
         features = features,
         action_configs = [],
