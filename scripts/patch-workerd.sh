@@ -73,19 +73,39 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Patch build/BUILD.zlib for Android compatibility
+# 4. Patch capnp-cpp for Android Bionic memfd_create syscall fallback in deps.MODULE.bazel
+if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
+  echo "--> Patching capnp-cpp in build/deps/gen/deps.MODULE.bazel..."
+  python3 -c '
+with open("build/deps/gen/deps.MODULE.bazel", "r") as f:
+    c = f.read()
+
+target = "    name = \"capnp-cpp\","
+patch_cmd = """    name = "capnp-cpp",
+    patch_cmds = [
+        "python3 -c \\x27src = open(\\"src/kj/filesystem.c++\\").read(); open(\\"src/kj/filesystem.c++\\", \\"w\\").write(src.replace(\\"#include <sys/mman.h>    // for memfd_create()\\", \\"#include <sys/mman.h>\\\\n#include <sys/syscall.h>\\\\n#include <unistd.h>\\\\n#if defined(__ANDROID__) && !defined(SYS_memfd_create) && defined(__NR_memfd_create)\\\\n#define SYS_memfd_create __NR_memfd_create\\\\n#endif\\\\n#if defined(__ANDROID__)\\\\nstatic inline int kj_memfd_create(const char* n, unsigned int f) {\\\\n#if defined(SYS_memfd_create)\\\\n  return syscall(SYS_memfd_create, n, f);\\\\n#else\\\\n  errno = ENOSYS;\\\\n  return -1;\\\\n#endif\\\\n}\\\\n#define memfd_create kj_memfd_create\\\\n#endif\\"))\\x27",
+    ],"""
+
+if "patch_cmds =" not in c and target in c:
+    with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
+        f.write(c.replace(target, patch_cmd, 1))
+    print("    Successfully injected capnp-cpp patch_cmds")
+'
+fi
+
+# 5. Patch build/BUILD.zlib for Android compatibility
 if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
   echo "--> Applying Android-compatible build/BUILD.zlib..."
   cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
 fi
 
-# 5. Patch build/wd_cc_embed.bzl for portable embed generation
+# 6. Patch build/wd_cc_embed.bzl for portable embed generation
 if [ -f "${REPO_ROOT}/patches/wd_cc_embed.bzl" ]; then
   echo "--> Applying portable build/wd_cc_embed.bzl..."
   cp "${REPO_ROOT}/patches/wd_cc_embed.bzl" build/wd_cc_embed.bzl
 fi
 
-# 6. Patch workerd .bazelrc for Android / Bionic build configs
+# 7. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc

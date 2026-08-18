@@ -57,14 +57,6 @@ selects.config_setting_group(
     ],
 )
 
-selects.config_setting_group(
-    name = "arm64_android",
-    match_any = [
-        "@platforms//os:android",
-        ":arm64_linux",
-    ],
-)
-
 cc_library(
     name = "zlib_common_headers",
     hdrs = [
@@ -94,15 +86,10 @@ cc_library(
         "//conditions:default": [],
     }),
     local_defines = ["ZLIB_IMPLEMENTATION"] + select({
-        "@platforms//cpu:x86_64": ["ADLER32_SIMD_SSSE3"],
+        "@platforms//cpu:x86_64": ["ADLER32_SIMD_SSSE3", "X86_NOT_WINDOWS"],
         "@platforms//cpu:aarch64": ["ADLER32_SIMD_NEON"],
         "@platforms//cpu:arm64": ["ADLER32_SIMD_NEON"],
         "//conditions:default": [],
-    }) + select({
-        ":x86_linux": ["X86_NOT_WINDOWS"],
-        ":x86_macos": ["X86_NOT_WINDOWS"],
-        ":x86_windows": ["X86_WINDOWS"],
-        "//conditions:default": ["X86_NOT_WINDOWS"],
     }),
     deps = [":zlib_common_headers"],
 )
@@ -117,13 +104,8 @@ cc_library(
     local_defines = [
         "CRC32_ARMV8_CRC32",
         "ZLIB_IMPLEMENTATION",
-    ] + select({
-        "@platforms//os:linux": ["ARMV8_OS_LINUX"],
-        "@platforms//os:android": ["ARMV8_OS_LINUX"],
-        "@platforms//os:macos": ["ARMV8_OS_MACOS"],
-        "@platforms//os:windows": ["ARMV8_OS_WINDOWS"],
-        "//conditions:default": ["ARMV8_OS_LINUX"],
-    }),
+        "ARMV8_OS_LINUX",
+    ],
     target_compatible_with = select({
         "@platforms//cpu:aarch64": [],
         "@platforms//cpu:arm64": [],
@@ -241,26 +223,21 @@ cc_library(
             "ADLER32_SIMD_SSSE3",
             "CRC32_SIMD_SSE42_PCLMUL",
             "DEFLATE_SLIDE_HASH_SSE2",
+            "X86_NOT_WINDOWS",
         ],
         "@platforms//cpu:aarch64": [
             "ADLER32_SIMD_NEON",
             "CRC32_ARMV8_CRC32",
             "DEFLATE_SLIDE_HASH_NEON",
+            "ARMV8_OS_LINUX",
         ],
         "@platforms//cpu:arm64": [
             "ADLER32_SIMD_NEON",
             "CRC32_ARMV8_CRC32",
             "DEFLATE_SLIDE_HASH_NEON",
+            "ARMV8_OS_LINUX",
         ],
         "//conditions:default": [],
-    }) + select({
-        ":x86_linux": ["X86_NOT_WINDOWS"],
-        ":x86_macos": ["X86_NOT_WINDOWS"],
-        ":x86_windows": ["X86_WINDOWS"],
-        ":arm64_linux": ["ARMV8_OS_LINUX"],
-        ":arm64_macos": ["ARMV8_OS_MACOS"],
-        ":arm64_windows": ["ARMV8_OS_WINDOWS"],
-        "//conditions:default": ["ARMV8_OS_LINUX"],
     }),
     visibility = ["//visibility:public"],
     deps = [
