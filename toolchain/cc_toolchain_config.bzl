@@ -59,7 +59,6 @@ def _impl(ctx):
     compile_flags = [
         "-target", target_triple + str(api_level),
         "-fPIC",
-        "-fno-canonical-system-headers",
         "-no-canonical-prefixes",
         "-D__ANDROID__",
         "-D__ANDROID_API__=" + str(api_level),
@@ -72,7 +71,6 @@ def _impl(ctx):
     ]
 
     cxx_flags = [
-        "-std=c++20",
         "-stdlib=libc++",
     ]
 
