@@ -94,8 +94,8 @@ if "patches/capnp/0001-android-memfd.patch" not in c and target in c:
 '
 fi
 
-# 5. Integrate V8 Android Bionic atomic_ref patch
-echo "--> Integrating V8 Android Bionic atomic_ref patch..."
+# 5. Integrate V8 Android Bionic atomic_ref & header patches
+echo "--> Integrating V8 Android Bionic atomic_ref & header patches..."
 mkdir -p patches/v8
 cp "${REPO_ROOT}/patches/v8/0040-add-atomic-ref-fallback-for-android-bionic.patch" patches/v8/0040-add-atomic-ref-fallback-for-android-bionic.patch
 if [ -f "build/deps/v8.MODULE.bazel" ]; then
@@ -114,25 +114,34 @@ if "0040-add-atomic-ref-fallback-for-android-bionic.patch" not in c and target i
 '
 fi
 
-# 6. Patch build/BUILD.zlib for Android compatibility
+# 6. Fix cross-compilation exec config for code generator binaries
+echo "--> Configuring cross-compilation execution platforms for generator binaries..."
+if [ -f "build/run_binary_target.bzl" ]; then
+  sed -i 's|cfg = "target"|cfg = "exec"|g' build/run_binary_target.bzl
+fi
+if [ -f "patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch" ]; then
+  sed -i 's|+    return "target"|+    return "exec"|g' patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch
+fi
+
+# 7. Patch build/BUILD.zlib for Android compatibility
 if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
   echo "--> Applying Android-compatible build/BUILD.zlib..."
   cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
 fi
 
-# 7. Patch build/BUILD.simdutf for Android compatibility
+# 8. Patch build/BUILD.simdutf for Android compatibility
 if [ -f "${REPO_ROOT}/patches/BUILD.simdutf" ]; then
   echo "--> Applying Android-compatible build/BUILD.simdutf..."
   cp "${REPO_ROOT}/patches/BUILD.simdutf" build/BUILD.simdutf
 fi
 
-# 8. Patch build/wd_cc_embed.bzl for portable embed generation
+# 9. Patch build/wd_cc_embed.bzl for portable embed generation
 if [ -f "${REPO_ROOT}/patches/wd_cc_embed.bzl" ]; then
   echo "--> Applying portable build/wd_cc_embed.bzl..."
   cp "${REPO_ROOT}/patches/wd_cc_embed.bzl" build/wd_cc_embed.bzl
 fi
 
-# 9. Patch workerd .bazelrc for Android / Bionic build configs
+# 10. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
