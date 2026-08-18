@@ -15,6 +15,10 @@ fi
 
 cd "${WORKERD_DIR}"
 
+# Setup githooks if directory exists to satisfy workerd workspace check
+mkdir -p githooks
+git config core.hooksPath githooks || true
+
 # 1. Update root BUILD.bazel with Android platforms and constraints
 echo "--> Configuring Android platforms in BUILD.bazel..."
 if ! grep -q "name = \"android_aarch64\"" BUILD.bazel; then

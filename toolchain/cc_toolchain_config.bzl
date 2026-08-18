@@ -167,5 +167,4 @@ android_cc_toolchain_config = rule(
         "api_level": attr.int(default = 24),
         "ndk_path": attr.string(mandatory = True),
     },
-    provides = [CcToolchainConfigInfo],
 )
