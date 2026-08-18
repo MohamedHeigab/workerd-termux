@@ -65,13 +65,7 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
 #endif' src/workerd/server/workerd.c++ || true
 fi
 
-# 3. Apply JSG_STRUCT NTTP compatibility patch for Clang/Bionic
-if [ -f "${REPO_ROOT}/patches/0004-jsg-struct-nttp.patch" ]; then
-  echo "--> Applying JSG_STRUCT NTTP compatibility patch..."
-  patch -p1 -N -i "${REPO_ROOT}/patches/0004-jsg-struct-nttp.patch" || true
-fi
-
-# 4. Add Android target triples to rust.MODULE.bazel
+# 3. Add Android target triples to rust.MODULE.bazel
 if [ -f "build/deps/rust.MODULE.bazel" ]; then
   if ! grep -q "aarch64-linux-android" build/deps/rust.MODULE.bazel; then
     echo "--> Adding Android triples to rust.MODULE.bazel..."
@@ -79,45 +73,31 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 5. Integrate capnp-cpp and simdutf patches in deps.MODULE.bazel
-echo "--> Integrating capnp-cpp and simdutf patches..."
-mkdir -p patches/capnp patches/simdutf
+# 4. Integrate capnp-cpp Android memfd_create patch
+echo "--> Integrating capnp-cpp Android Bionic patch..."
+mkdir -p patches/capnp
 cp "${REPO_ROOT}/patches/capnp/0001-android-memfd.patch" patches/capnp/0001-android-memfd.patch
-cp "${REPO_ROOT}/patches/simdutf/0001-simdutf-atomic-ref.patch" patches/simdutf/0001-simdutf-atomic-ref.patch
-
 if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
   python3 -c '
 with open("build/deps/gen/deps.MODULE.bazel", "r") as f:
     c = f.read()
 
-# capnp-cpp
-target_capnp = "    name = \"capnp-cpp\","
-replacement_capnp = """    name = "capnp-cpp",
+target = "    name = \"capnp-cpp\","
+replacement = """    name = "capnp-cpp",
     patch_args = ["-p1"],
     patches = ["//:patches/capnp/0001-android-memfd.patch"],"""
-if "patches/capnp/0001-android-memfd.patch" not in c and target_capnp in c:
-    c = c.replace(target_capnp, replacement_capnp, 1)
 
-# simdutf
-target_simd = """    name = "simdutf",
-    build_file = "//:build/BUILD.simdutf\","""
-replacement_simd = """    name = "simdutf",
-    build_file = "//:build/BUILD.simdutf",
-    patch_args = ["-p1"],
-    patches = ["//:patches/simdutf/0001-simdutf-atomic-ref.patch"],"""
-if "patches/simdutf/0001-simdutf-atomic-ref.patch" not in c and target_simd in c:
-    c = c.replace(target_simd, replacement_simd, 1)
-
-with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
-    f.write(c)
-print("    Registered patches in build/deps/gen/deps.MODULE.bazel")
+if "patches/capnp/0001-android-memfd.patch" not in c and target in c:
+    with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
+        f.write(c.replace(target, replacement, 1))
+    print("    Registered patches/capnp/0001-android-memfd.patch in build/deps/gen/deps.MODULE.bazel")
 '
 fi
 
-# 6. Integrate V8 Android Bionic atomic_ref & header patches
-echo "--> Integrating V8 Android Bionic atomic_ref & header patches..."
+# 5. Integrate V8 Android Bionic header patch
+echo "--> Integrating V8 Android Bionic header patch..."
 mkdir -p patches/v8
-cp "${REPO_ROOT}/patches/v8/0040-add-atomic-ref-fallback-for-android-bionic.patch" patches/v8/0040-add-atomic-ref-fallback-for-android-bionic.patch
+cp "${REPO_ROOT}/patches/v8/0040-stack-trace-android.patch" patches/v8/0040-stack-trace-android.patch
 if [ -f "build/deps/v8.MODULE.bazel" ]; then
   python3 -c '
 with open("build/deps/v8.MODULE.bazel", "r") as f:
@@ -125,16 +105,16 @@ with open("build/deps/v8.MODULE.bazel", "r") as f:
 
 target = "\"0039-wasm-memory.discard-prototype-for-the-memory-control.patch\","
 replacement = """\"0039-wasm-memory.discard-prototype-for-the-memory-control.patch\",
-    \"0040-add-atomic-ref-fallback-for-android-bionic.patch\","""
+    \"0040-stack-trace-android.patch\","""
 
-if "0040-add-atomic-ref-fallback-for-android-bionic.patch" not in c and target in c:
+if "0040-stack-trace-android.patch" not in c and target in c:
     with open("build/deps/v8.MODULE.bazel", "w") as f:
         f.write(c.replace(target, replacement, 1))
-    print("    Registered patches/v8/0040-add-atomic-ref-fallback-for-android-bionic.patch in build/deps/v8.MODULE.bazel")
+    print("    Registered patches/v8/0040-stack-trace-android.patch in build/deps/v8.MODULE.bazel")
 '
 fi
 
-# 7. Fix cross-compilation exec config for code generator binaries
+# 6. Fix cross-compilation exec config for code generator binaries
 echo "--> Configuring cross-compilation execution platforms for generator binaries..."
 if [ -f "build/run_binary_target.bzl" ]; then
   sed -i 's|cfg = "target"|cfg = "exec"|g' build/run_binary_target.bzl
@@ -143,25 +123,25 @@ if [ -f "patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patc
   sed -i 's|+    return "target"|+    return "exec"|g' patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch
 fi
 
-# 8. Patch build/BUILD.zlib for Android compatibility
+# 7. Patch build/BUILD.zlib for Android compatibility
 if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
   echo "--> Applying Android-compatible build/BUILD.zlib..."
   cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
 fi
 
-# 9. Patch build/BUILD.simdutf for Android compatibility
+# 8. Patch build/BUILD.simdutf for Android compatibility
 if [ -f "${REPO_ROOT}/patches/BUILD.simdutf" ]; then
   echo "--> Applying Android-compatible build/BUILD.simdutf..."
   cp "${REPO_ROOT}/patches/BUILD.simdutf" build/BUILD.simdutf
 fi
 
-# 10. Patch build/wd_cc_embed.bzl for portable embed generation
+# 9. Patch build/wd_cc_embed.bzl for portable embed generation
 if [ -f "${REPO_ROOT}/patches/wd_cc_embed.bzl" ]; then
   echo "--> Applying portable build/wd_cc_embed.bzl..."
   cp "${REPO_ROOT}/patches/wd_cc_embed.bzl" build/wd_cc_embed.bzl
 fi
 
-# 11. Patch workerd .bazelrc for Android / Bionic build configs
+# 10. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc

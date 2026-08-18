@@ -98,7 +98,8 @@ jobs:
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r27c
+          ndk-version: r28
+          local-cache: true
           add-to-path: true
 
       - name: Determine workerd version
