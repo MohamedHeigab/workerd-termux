@@ -1,28 +1,12 @@
-diff --git a/src/kj/filesystem.c++ b/src/kj/filesystem.c++
-index 7c04246..ae9d613 100644
---- a/src/kj/filesystem.c++
-+++ b/src/kj/filesystem.c++
-@@ -30,6 +30,8 @@
+diff --git a/src/capnp/rpc.c++ b/src/capnp/rpc.c++
+index b50bca6..136c20d 100644
+--- a/src/capnp/rpc.c++
++++ b/src/capnp/rpc.c++
+@@ -1273,6 +1273,7 @@ private:
+                    kj::Own<QuestionRef>&& questionRef,
+                    kj::Array<PipelineOp>&& ops)
+         : RpcClient(connectionState), questionRef(kj::mv(questionRef)), ops(kj::mv(ops)) {}
++    ~PipelineClient() noexcept(false) {}
  
- #if __linux__
- #include <sys/mman.h>    // for memfd_create()
-+#include <sys/syscall.h>
-+#include <unistd.h>
- #endif  // __linux__
- 
- namespace kj {
-@@ -1839,7 +1841,14 @@ const InMemoryFileFactory& defaultInMemoryFileFactory() {
- #if __linux__
- 
- Own<File> newMemfdFile(uint flags) {
-+  #if defined(__ANDROID__)
-+#ifndef SYS_memfd_create
-+#define SYS_memfd_create __NR_memfd_create
-+#endif
-+  return newDiskFile(KJ_SYSCALL_FD(syscall(SYS_memfd_create, "kj-memfd", flags | MFD_CLOEXEC)));
-+#else
-   return newDiskFile(KJ_SYSCALL_FD(memfd_create("kj-memfd", flags | MFD_CLOEXEC)));
-+#endif
- }
- 
- const InMemoryFileFactory& memfdInMemoryFileFactory() {
+     WriteDescriptorResult writeDescriptor(rpc::CapDescriptor::Builder descriptor,
+                                           OutgoingFds& fds) override {
