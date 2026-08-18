@@ -54,8 +54,8 @@ if ! grep -q '":is_android"' BUILD.bazel; then
   sed -i '/":is_macos",/a \        ":is_android",' BUILD.bazel
 fi
 
-# 2. Update src/workerd/server/workerd.c++ for Android exe resolution
-echo "--> Patching src/workerd/server/workerd.c++..."
+# 2. Update src/workerd/server/workerd.c++ and src/workerd/jsg/memory.h
+echo "--> Patching workerd source files..."
 if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
   sed -i '/KJ_IF_SOME(link, fs.getRoot().tryReadlink(kj::Path({"proc", "self", "exe"}))) {/i \
 #if defined(__ANDROID__)\
@@ -63,6 +63,11 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
       return tryOpenExe(fs, link);\
     }\
 #endif' src/workerd/server/workerd.c++ || true
+fi
+
+if [ -f "src/workerd/jsg/memory.h" ]; then
+  sed -i 's|~HeapSnapshotActivity() noexcept(true) = default;|~HeapSnapshotActivity() noexcept {}|g' src/workerd/jsg/memory.h
+  sed -i 's|~HeapSnapshotWriter() noexcept(true) = default;|~HeapSnapshotWriter() noexcept {}|g' src/workerd/jsg/memory.h
 fi
 
 # 3. Add Android target triples to rust.MODULE.bazel

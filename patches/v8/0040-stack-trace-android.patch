@@ -62,3 +62,16 @@ index 16fbf98..00334f1 100644
  
  #include <iomanip>
  #include <ostream>
+diff --git a/src/compiler/turboshaft/wasm-shuffle-reducer.cc b/src/compiler/turboshaft/wasm-shuffle-reducer.cc
+index 04fa143..3c4d522 100644
+--- a/src/compiler/turboshaft/wasm-shuffle-reducer.cc
++++ b/src/compiler/turboshaft/wasm-shuffle-reducer.cc
+@@ -519,7 +519,7 @@ void WasmShuffleAnalyzer::ProcessShuffleOfLoads(const Simd128ShuffleOp& shuffle,
+ 
+   if (GetDemandedBytes(&shuffle).IsAll()) {
+     // Full width shuffles.
+-    SimdShuffle::ShuffleArray shuffle_bytes;
++    SimdShuffle::ShuffleArray<kSimd128Size> shuffle_bytes;
+     std::copy_n(shuffle.shuffle, kSimd128Size, shuffle_bytes.begin());
+     auto canonical = SimdShuffle::TryMatchCanonical(shuffle_bytes);
+     switch (canonical) {
