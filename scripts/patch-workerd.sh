@@ -79,7 +79,13 @@ if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
   cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
 fi
 
-# 5. Patch workerd .bazelrc for Android / Bionic build configs
+# 5. Patch build/wd_cc_embed.bzl for portable embed generation
+if [ -f "${REPO_ROOT}/patches/wd_cc_embed.bzl" ]; then
+  echo "--> Applying portable build/wd_cc_embed.bzl..."
+  cp "${REPO_ROOT}/patches/wd_cc_embed.bzl" build/wd_cc_embed.bzl
+fi
+
+# 6. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc

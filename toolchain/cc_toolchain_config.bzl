@@ -68,6 +68,7 @@ def _impl(ctx):
         "-Wall",
         "-Wno-invalid-offsetof",
         "-Wno-unknown-warning-option",
+        "-Wno-macro-redefined",
     ]
 
     cxx_flags = [
@@ -146,6 +147,15 @@ def _impl(ctx):
             ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include",
             ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/" + target_triple,
             ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/c++/v1",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/sysroot",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/lib/clang",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64/include",
+            ndk_path + "/toolchains/llvm/prebuilt/linux-x86_64",
+            ndk_path,
+            "/usr/include",
+            "/usr/local/include",
         ],
         toolchain_identifier = "android_bionic_toolchain",
         host_system_name = "x86_64-unknown-linux-gnu",
