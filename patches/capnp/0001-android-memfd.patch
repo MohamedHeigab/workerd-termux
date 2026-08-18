@@ -1,5 +1,5 @@
 diff --git a/src/capnp/rpc.c++ b/src/capnp/rpc.c++
-index b50bca6..136c20d 100644
+index b50bca6..c2254c7 100644
 --- a/src/capnp/rpc.c++
 +++ b/src/capnp/rpc.c++
 @@ -1273,6 +1273,7 @@ private:
@@ -10,6 +10,22 @@ index b50bca6..136c20d 100644
  
      WriteDescriptorResult writeDescriptor(rpc::CapDescriptor::Builder descriptor,
                                            OutgoingFds& fds) override {
+@@ -1590,6 +1591,7 @@ private:
+     DeferredThirdPartyClient(RpcConnectionState& connectionState,
+         kj::Own<AnyPointer::Reader> contact, kj::Own<RpcClient> vine)
+         : RpcClient(connectionState), state(Deferred {kj::mv(contact), kj::mv(vine)}) {}
++    ~DeferredThirdPartyClient() noexcept(false) {}
+ 
+     bool promiseResolvedToThis(bool receivedCall) override {
+       if (receivedCall) {
+@@ -2159,6 +2161,7 @@ private:
+   public:
+     RequireEmbargoWrapper(RpcConnectionState& connectionState, kj::Own<RpcClient> inner)
+         : RpcClient(connectionState), inner(kj::mv(inner)) {}
++    ~RequireEmbargoWrapper() noexcept(false) {}
+ 
+     Request<AnyPointer, AnyPointer> newCall(
+         uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
 diff --git a/src/kj/filesystem.c++ b/src/kj/filesystem.c++
 index 7c04246..4e0e524 100644
 --- a/src/kj/filesystem.c++
