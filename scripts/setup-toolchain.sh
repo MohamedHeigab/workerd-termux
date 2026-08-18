@@ -24,25 +24,39 @@ fi
 
 NDK_BIN="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
+# Make sure all binaries in NDK_BIN are executable and fix any broken symlinks if needed
+chmod -R +x "${NDK_BIN}" 2>/dev/null || true
+
+# Determine actual clang / clang++ binaries
+CLANG_EXE="${NDK_BIN}/clang"
+if [ ! -f "${CLANG_EXE}" ] && [ -f "${NDK_BIN}/clang-19" ]; then
+  CLANG_EXE="${NDK_BIN}/clang-19"
+fi
+
+CLANGXX_EXE="${NDK_BIN}/clang++"
+if [ ! -f "${CLANGXX_EXE}" ] && [ -f "${NDK_BIN}/clang-19" ]; then
+  CLANGXX_EXE="${NDK_BIN}/clang-19"
+fi
+
 # 1. Copy toolchain package into workerd-src
 mkdir -p "${WORKERD_DIR}/toolchain/wrappers"
 cp "${REPO_ROOT}/toolchain/cc_toolchain_config.bzl" "${WORKERD_DIR}/toolchain/"
 sed "s|\$\$ANDROID_NDK_HOME\$\$|${ANDROID_NDK_HOME}|g" "${REPO_ROOT}/toolchain/BUILD.bazel" > "${WORKERD_DIR}/toolchain/BUILD.bazel"
 
-# 2. Create toolchain wrappers
+# 2. Create direct toolchain wrappers passing --target explicitly
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang"
 #!/usr/bin/env bash
-exec "${NDK_BIN}/${TARGET_TRIPLE}${API_LEVEL}-clang" "\$@"
+exec "${CLANG_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\$@"
 EOF
 
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang++"
 #!/usr/bin/env bash
-exec "${NDK_BIN}/${TARGET_TRIPLE}${API_LEVEL}-clang++" "\$@"
+exec "${CLANGXX_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\$@"
 EOF
 
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang-cpp"
 #!/usr/bin/env bash
-exec "${NDK_BIN}/${TARGET_TRIPLE}${API_LEVEL}-clang" -E "\$@"
+exec "${CLANG_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" -E "\$@"
 EOF
 
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/llvm-ar"
