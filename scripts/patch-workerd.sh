@@ -65,20 +65,7 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
 #endif' src/workerd/server/workerd.c++ || true
 fi
 
-# 3. Add V8 patches into workerd's patches/v8 directory
-echo "--> Integrating V8 Termux patch..."
-mkdir -p patches/v8
-cp "${REPO_ROOT}/patches/0002-v8-termux-bionic.patch" patches/v8/0040-termux-bionic-support.patch
-
-# 4. Register the new V8 patch in v8.MODULE.bazel if not already present
-if [ -f "build/deps/v8.MODULE.bazel" ]; then
-  if ! grep -q "0040-termux-bionic-support.patch" build/deps/v8.MODULE.bazel; then
-    echo "--> Registering 0040-termux-bionic-support.patch in build/deps/v8.MODULE.bazel"
-    sed -i '/"0039-wasm-memory.discard-prototype-for-the-memory-control.patch",/a \    "0040-termux-bionic-support.patch",' build/deps/v8.MODULE.bazel
-  fi
-fi
-
-# 5. Add Android target triples to rust.MODULE.bazel
+# 3. Add Android target triples to rust.MODULE.bazel
 if [ -f "build/deps/rust.MODULE.bazel" ]; then
   if ! grep -q "aarch64-linux-android" build/deps/rust.MODULE.bazel; then
     echo "--> Adding Android triples to rust.MODULE.bazel..."
@@ -86,7 +73,7 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 6. Patch workerd .bazelrc for Android / Bionic build configs
+# 4. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
