@@ -78,7 +78,15 @@ if [ -f "build/deps/v8.MODULE.bazel" ]; then
   fi
 fi
 
-# 5. Patch workerd .bazelrc for Android / Bionic build configs
+# 5. Add Android target triples to rust.MODULE.bazel
+if [ -f "build/deps/rust.MODULE.bazel" ]; then
+  if ! grep -q "aarch64-linux-android" build/deps/rust.MODULE.bazel; then
+    echo "--> Adding Android triples to rust.MODULE.bazel..."
+    sed -i 's|"aarch64-unknown-linux-gnu",|"aarch64-unknown-linux-gnu",\n    "aarch64-linux-android",\n    "x86_64-linux-android",|' build/deps/rust.MODULE.bazel
+  fi
+fi
+
+# 6. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
@@ -87,6 +95,7 @@ cat << 'EOF' >> .bazelrc
 # Termux Android Bionic Build Configuration
 # ==========================================
 build:android --//src/workerd/server:use_tcmalloc=False
+build:android --//src/workerd/server:use_transpiler=False
 build:android --copt=-D__ANDROID__
 build:android --copt=-D__TERMUX__
 build:android --copt=-D__ANDROID_API__=24

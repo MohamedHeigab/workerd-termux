@@ -34,6 +34,7 @@ bazel build //src/workerd/server:workerd \
   --platforms=${TARGET_PLATFORM} \
   --cpu=${BAZEL_CPU} \
   --//src/workerd/server:use_tcmalloc=False \
+  --//src/workerd/server:use_transpiler=False \
   --verbose_failures \
   --jobs="$(nproc)"
 
