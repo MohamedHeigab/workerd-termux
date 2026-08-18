@@ -1,3 +1,15 @@
+diff --git a/src/tracing/core/shared_memory_arbiter_impl.h b/src/tracing/core/shared_memory_arbiter_impl.h
+index 9fc12d4..5bf524b 100644
+--- a/src/tracing/core/shared_memory_arbiter_impl.h
++++ b/src/tracing/core/shared_memory_arbiter_impl.h
+@@ -31,6 +31,7 @@
+ #include "perfetto/ext/tracing/core/shared_memory_abi.h"
+ #include "perfetto/ext/tracing/core/shared_memory_arbiter.h"
+ #include "perfetto/tracing/core/forward_decls.h"
++#include "perfetto/ext/tracing/core/commit_data_request.h"
+ #include "src/tracing/core/id_allocator.h"
+ 
+ namespace perfetto {
 diff --git a/src/tracing/internal/tracing_muxer_impl.h b/src/tracing/internal/tracing_muxer_impl.h
 index 0f37b4a..d950fb9 100644
 --- a/src/tracing/internal/tracing_muxer_impl.h
