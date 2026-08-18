@@ -1,13 +1,14 @@
 diff --git a/simdutf.h b/simdutf.h
-index b1af312..896756a 100644
+index b1af312..56ef28f 100644
 --- a/simdutf.h
 +++ b/simdutf.h
-@@ -959,6 +959,44 @@ enum {
+@@ -959,6 +959,45 @@ enum {
  #define SIMDUTF_IMPLEMENTATION_H
  #if !defined(SIMDUTF_NO_THREADS)
    #include <atomic>
 +
-+#ifndef __cpp_lib_atomic_ref
++#if !defined(__cpp_lib_atomic_ref) && !defined(_ATOMIC_REF_SHIM_DEFINED)
++#define _ATOMIC_REF_SHIM_DEFINED 1
 +namespace std {
 +template <typename T>
 +struct atomic_ref {
@@ -47,12 +48,13 @@ index b1af312..896756a 100644
  #endif
  #ifdef SIMDUTF_INTERNAL_TESTS
    #include <vector>
-@@ -1686,6 +1724,44 @@ validate_with_errors(InputPtr data, size_t len) noexcept {
+@@ -1686,6 +1725,45 @@ validate_with_errors(InputPtr data, size_t len) noexcept {
  #define SIMDUTF_ATOMIC_UTIL_H
  #if SIMDUTF_ATOMIC_REF
    #include <atomic>
 +
-+#ifndef __cpp_lib_atomic_ref
++#if !defined(__cpp_lib_atomic_ref) && !defined(_ATOMIC_REF_SHIM_DEFINED)
++#define _ATOMIC_REF_SHIM_DEFINED 1
 +namespace std {
 +template <typename T>
 +struct atomic_ref {

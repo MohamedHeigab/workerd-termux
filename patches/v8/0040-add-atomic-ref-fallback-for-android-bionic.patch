@@ -12,16 +12,17 @@ index 16fbf98..00334f1 100644
  #include <iomanip>
  #include <ostream>
 diff --git a/src/base/macros.h b/src/base/macros.h
-index c2c24e8..a815810 100644
+index c2c24e8..69cc4f8 100644
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
-@@ -13,6 +13,47 @@
+@@ -13,6 +13,48 @@
  #include "src/base/compiler-specific.h"
  #include "src/base/logging.h"
  
 +#include <atomic>
 +
-+#ifndef __cpp_lib_atomic_ref
++#if !defined(__cpp_lib_atomic_ref) && !defined(_ATOMIC_REF_SHIM_DEFINED)
++#define _ATOMIC_REF_SHIM_DEFINED 1
 +namespace std {
 +template <typename T>
 +struct atomic_ref {
