@@ -1,0 +1,40 @@
+From: Termux Porter <porter@termux.dev>
+Subject: [PATCH] v8: Adjust temporary paths and enable trap handler for Termux Android
+
+---
+ src/flags/flag-definitions.h     | 6 +++++-
+ src/trap-handler/trap-handler.h | 8 ++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index aaaaaaa..bbbbbbb 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -2590,7 +2590,11 @@ DEFINE_INT(wasm_max_table_size, 10000000,
+ #if defined(ANDROID) || defined(__ANDROID__)
+ #define DEFAULT_PERF_BASIC_PROF_PATH "/data/local/tmp"
+ #define DEFAULT_PERF_PROF_PATH DEFAULT_PERF_BASIC_PROF_PATH
++#elif defined(__TERMUX__)
++#define DEFAULT_PERF_BASIC_PROF_PATH "/data/data/com.termux/files/usr/tmp"
++#define DEFAULT_PERF_PROF_PATH DEFAULT_PERF_BASIC_PROF_PATH
+ #else
+ #define DEFAULT_PERF_BASIC_PROF_PATH "/tmp"
+ #define DEFAULT_PERF_PROF_PATH "."
+ #endif
+diff --git a/src/trap-handler/trap-handler.h b/src/trap-handler/trap-handler.h
+index ccccccc..ddddddd 100644
+--- a/src/trap-handler/trap-handler.h
++++ b/src/trap-handler/trap-handler.h
+@@ -17,7 +17,11 @@ namespace v8::internal::trap_handler {
+ #if V8_HOST_ARCH_X64 && V8_TARGET_ARCH_X64 &&                        \
+     ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
+      V8_OS_FREEBSD)
+ #define V8_TRAP_HANDLER_SUPPORTED true
++#elif V8_HOST_ARCH_X64 && V8_TARGET_ARCH_X64 && V8_OS_ANDROID
++#define V8_TRAP_HANDLER_SUPPORTED true
++// Arm64 native on Linux, Android (Termux), Windows, MacOS.
++#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
++    (V8_OS_LINUX || V8_OS_ANDROID || V8_OS_WIN || V8_OS_DARWIN)
+ #define V8_TRAP_HANDLER_SUPPORTED true
+-- 
+2.43.0

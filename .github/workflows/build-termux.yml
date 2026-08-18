@@ -1,0 +1,221 @@
+name: Build workerd for Termux Android
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      workerd_version:
+        description: 'workerd git tag or branch to build (e.g. v1.20250214.0 or main)'
+        required: true
+        default: 'main'
+      build_type:
+        description: 'Build configuration (release or opt)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - opt
+
+permissions:
+  contents: write
+
+jobs:
+  build-termux:
+    name: Build workerd (${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            android_abi: arm64-v8a
+            target_triple: aarch64-linux-android
+            api_level: 24
+          - arch: x86_64
+            android_abi: x86_64
+            target_triple: x86_64-linux-android
+            api_level: 24
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Set up Bazelisk
+        uses: bazelbuild/setup-bazelisk@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Host Tools and LLVM 19
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            clang-19 \
+            lld-19 \
+            llvm-19 \
+            libc++-19-dev \
+            libc++abi-19-dev \
+            tcl8.6-dev \
+            tcl8.6 \
+            ninja-build \
+            pkg-config \
+            dpkg-dev \
+            file \
+            binutils
+          # Configure default clang to clang-19
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 100
+          sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-19 100
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
+          add-to-path: true
+
+      - name: Determine workerd version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            WORKERD_REF="${{ github.event.inputs.workerd_version }}"
+          elif [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            WORKERD_REF="${GITHUB_REF#refs/tags/}"
+          else
+            WORKERD_REF="main"
+          fi
+          echo "WORKERD_REF=${WORKERD_REF}" >> $GITHUB_ENV
+          echo "workerd_ref=${WORKERD_REF}" >> $GITHUB_OUTPUT
+
+      - name: Clone workerd repository
+        run: |
+          git clone --depth 1 --branch "${WORKERD_REF}" https://github.com/cloudflare/workerd.git workerd-src || \
+          git clone --depth 1 https://github.com/cloudflare/workerd.git workerd-src
+          cd workerd-src
+          WORKERD_COMMIT=$(git rev-parse --short HEAD)
+          WORKERD_VERSION_STR=$(git describe --tags --always 2>/dev/null || echo "1.0.0-${WORKERD_COMMIT}")
+          echo "WORKERD_VERSION=${WORKERD_VERSION_STR#v}" >> $GITHUB_ENV
+          echo "WORKERD_COMMIT=${WORKERD_COMMIT}" >> $GITHUB_ENV
+
+      - name: Apply Termux Bionic Patches
+        run: |
+          chmod +x scripts/patch-workerd.sh
+          ./scripts/patch-workerd.sh workerd-src
+
+      - name: Configure Android Bionic Toolchain & Bazel
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          TARGET_TRIPLE: ${{ matrix.target_triple }}
+          API_LEVEL: ${{ matrix.api_level }}
+        run: |
+          chmod +x scripts/setup-toolchain.sh
+          ./scripts/setup-toolchain.sh workerd-src
+
+      - name: Build workerd with Bazel for Android/Bionic
+        id: bazel-build
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          TARGET_TRIPLE: ${{ matrix.target_triple }}
+          API_LEVEL: ${{ matrix.api_level }}
+        run: |
+          chmod +x scripts/build-workerd.sh
+          ./scripts/build-workerd.sh workerd-src
+
+      - name: Verify Compiled Binary
+        run: |
+          BINARY_PATH="workerd-src/bazel-bin/src/workerd/server/workerd"
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            exit 1
+          fi
+          echo "=== File Info ==="
+          file "$BINARY_PATH"
+          echo "=== ELF Header ==="
+          readelf -h "$BINARY_PATH"
+          echo "=== Dynamic Section (Shared Libraries & Linker) ==="
+          readelf -d "$BINARY_PATH" || true
+
+      - name: Package Termux .deb and Standalone Tarball
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
+          VERSION: ${{ env.WORKERD_VERSION }}
+        run: |
+          chmod +x scripts/package-deb.sh
+          ./scripts/package-deb.sh workerd-src "${VERSION}" "${TARGET_ARCH}"
+
+      - name: Generate SHA256 Checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workerd-termux-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: build-termux
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release-assets
+          find all-artifacts -type f -exec cp {} release-assets/ \;
+          cd release-assets
+          sha256sum * | grep -v SHA256SUMS > SHA256SUMS.all || true
+          cat SHA256SUMS.all
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: release-assets/*
+          name: "workerd for Termux ${{ github.ref_name }}"
+          body: |
+            ## Cloudflare workerd for Android (Termux)
+            
+            Built with Android Bionic libc and patched for Termux.
+            
+            ### Installation in Termux:
+            ```bash
+            # Download the .deb for your architecture (aarch64 for most devices):
+            pkg install ./workerd_${{ github.ref_name }}_aarch64.deb
+            
+            # Verify installation:
+            workerd --version
+            ```
+          draft: false
+          prerelease: false

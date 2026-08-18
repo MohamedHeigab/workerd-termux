@@ -1,0 +1,39 @@
+From: Termux Porter <porter@termux.dev>
+Subject: [PATCH] capnp-kj: Ensure compatibility with Android Bionic libc
+
+---
+ src/kj/exception.c++           | 4 +++-
+ src/kj/filesystem-disk-unix.c++ | 6 +++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/kj/exception.c++ b/src/kj/exception.c++
+index 1111111..2222222 100644
+--- a/src/kj/exception.c++
++++ b/src/kj/exception.c++
+@@ -48,7 +48,9 @@
+ #include <execinfo.h>
+ #endif
+ 
+-#if __ANDROID__
++#if defined(__ANDROID__)
++// On Android, backtrace() is either part of libunwind or libandroid-execinfo
++// KJ already handles Android by using libunwind or skipping frame symbolization
+ #endif
+ 
+ namespace kj {
+diff --git a/src/kj/filesystem-disk-unix.c++ b/src/kj/filesystem-disk-unix.c++
+index 3333333..4444444 100644
+--- a/src/kj/filesystem-disk-unix.c++
++++ b/src/kj/filesystem-disk-unix.c++
+@@ -35,6 +35,10 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <unistd.h>
++#ifdef __ANDROID__
++#include <sys/syscall.h>
++#include <linux/fs.h>
++#endif
+ 
+ namespace kj {
+-- 
+2.43.0
