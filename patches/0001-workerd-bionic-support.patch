@@ -1,13 +1,61 @@
 From: Termux Porter <porter@termux.dev>
-Subject: [PATCH] workerd: Add Android Bionic compatibility and Termux path defaults
+Subject: [PATCH] workerd: Add Android Bionic compatibility and Termux platform configs
 
 ---
+ BUILD.bazel                    | 24 ++++++++++++++++++++++++
  src/workerd/server/BUILD.bazel | 10 +++++++++-
  src/workerd/server/workerd.c++ | 18 ++++++++++++++++++
- 2 files changed, 27 insertions(+), 1 deletion(-)
+ 3 files changed, 51 insertions(+), 1 deletion(-)
 
-diff --git a/src/workerd/server/BUILD.bazel b/src/workerd/server/BUILD.bazel
+diff --git a/BUILD.bazel b/BUILD.bazel
 index 1111111..2222222 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -82,6 +82,23 @@ platform(
+     ],
+ )
+ 
++# Android platforms for Termux cross-compilation
++platform(
++    name = "android_aarch64",
++    constraint_values = [
++        "@platforms//os:android",
++        "@platforms//cpu:arm64",
++    ],
++)
++
++platform(
++    name = "android_x86_64",
++    constraint_values = [
++        "@platforms//os:android",
++        "@platforms//cpu:x86_64",
++    ],
++)
++
+ # Detect whether we use Linux/macOS/either, used to configure whether tcmalloc/perfetto should be
+ # used.
+ config_setting(
+@@ -94,10 +101,17 @@ config_setting(
+     visibility = ["//visibility:public"],
+ )
+ 
++config_setting(
++    name = "is_android",
++    constraint_values = ["@platforms//os:android"],
++    visibility = ["//visibility:public"],
++)
++
+ selects.config_setting_group(
+     name = "is_unix",
+     match_any = [
+         ":is_linux",
+         ":is_macos",
++        ":is_android",
+     ],
+     visibility = ["//visibility:public"],
+ )
+diff --git a/src/workerd/server/BUILD.bazel b/src/workerd/server/BUILD.bazel
+index 3333333..4444444 100644
 --- a/src/workerd/server/BUILD.bazel
 +++ b/src/workerd/server/BUILD.bazel
 @@ -43,6 +43,14 @@ config_setting(
@@ -35,7 +83,7 @@ index 1111111..2222222 100644
          "//conditions:default": ["@bazel_tools//tools/cpp:malloc"],
      }),
 diff --git a/src/workerd/server/workerd.c++ b/src/workerd/server/workerd.c++
-index 3333333..4444444 100644
+index 5555555..6666666 100644
 --- a/src/workerd/server/workerd.c++
 +++ b/src/workerd/server/workerd.c++
 @@ -62,6 +62,11 @@

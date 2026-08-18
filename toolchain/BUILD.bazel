@@ -22,9 +22,11 @@ android_cc_toolchain_config(
 
 cc_toolchain(
     name = "android_aarch64_cc_toolchain",
-    toolchain_identifier = "android_bionic_toolchain",
+    toolchain_identifier = "android_bionic_toolchain_aarch64",
     toolchain_config = ":android_aarch64_toolchain_config",
     all_files = ":wrappers",
+    ar_files = ":wrappers",
+    as_files = ":wrappers",
     compiler_files = ":wrappers",
     dwp_files = ":empty",
     linker_files = ":wrappers",
@@ -57,9 +59,11 @@ android_cc_toolchain_config(
 
 cc_toolchain(
     name = "android_x86_64_cc_toolchain",
-    toolchain_identifier = "android_bionic_toolchain",
+    toolchain_identifier = "android_bionic_toolchain_x86_64",
     toolchain_config = ":android_x86_64_toolchain_config",
     all_files = ":wrappers",
+    ar_files = ":wrappers",
+    as_files = ":wrappers",
     compiler_files = ":wrappers",
     dwp_files = ":empty",
     linker_files = ":wrappers",

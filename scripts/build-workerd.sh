@@ -16,19 +16,22 @@ cd "${WORKERD_DIR}"
 
 if [ "${TARGET_ARCH}" = "aarch64" ]; then
   BAZEL_CPU="arm64-v8a"
-  PLATFORM_CPU="arm64"
+  TARGET_PLATFORM="//:android_aarch64"
 elif [ "${TARGET_ARCH}" = "x86_64" ]; then
   BAZEL_CPU="x86_64"
-  PLATFORM_CPU="x86_64"
+  TARGET_PLATFORM="//:android_x86_64"
 else
   echo "Unsupported architecture: ${TARGET_ARCH}"
   exit 1
 fi
 
+echo "--> Target Platform: ${TARGET_PLATFORM}"
+echo "--> Bazel CPU:       ${BAZEL_CPU}"
+
 echo "--> Invoking Bazel..."
 bazel build //src/workerd/server:workerd \
   --config=release_android \
-  --platforms=@platforms//os:android,@platforms//cpu:${PLATFORM_CPU} \
+  --platforms=${TARGET_PLATFORM} \
   --cpu=${BAZEL_CPU} \
   --//src/workerd/server:use_tcmalloc=False \
   --verbose_failures \

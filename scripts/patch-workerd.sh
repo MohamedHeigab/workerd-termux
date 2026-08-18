@@ -15,7 +15,7 @@ fi
 
 cd "${WORKERD_DIR}"
 
-# 1. Apply core workerd patch
+# 1. Apply core workerd patch (BUILD.bazel, server/BUILD.bazel, server/workerd.c++)
 echo "--> Applying workerd bionic patch..."
 if patch -p1 --dry-run < "${REPO_ROOT}/patches/0001-workerd-bionic-support.patch" >/dev/null 2>&1; then
   patch -p1 < "${REPO_ROOT}/patches/0001-workerd-bionic-support.patch"
@@ -37,8 +37,15 @@ if [ -f "build/deps/v8.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Patch workerd .bazelrc for Android / Bionic build configs
+# 4. Fix api.github.com tarball URLs in deps.MODULE.bazel to prevent 504 timeouts / rate limits
+if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
+  echo "--> Replacing api.github.com tarball endpoints with codeload.github.com direct archives..."
+  sed -i -E 's|https://api\.github\.com/repos/([^/]+)/([^/]+)/tarball/([^"]+)|https://codeload.github.com/\1/\2/tar.gz/\3|g' build/deps/gen/deps.MODULE.bazel
+fi
+
+# 5. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
+if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
 
 # ==========================================
@@ -73,5 +80,6 @@ build:release_android --config=opt
 build:release_android --copt=-O3
 build:release_android --linkopt=-Wl,-O2
 EOF
+fi
 
 echo "=== Patches successfully applied! ==="
