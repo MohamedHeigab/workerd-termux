@@ -1,0 +1,59 @@
+diff --git a/src/workerd/jsg/jsg.h b/src/workerd/jsg/jsg.h
+index 8f9483f..e9eaadf 100644
+--- a/src/workerd/jsg/jsg.h
++++ b/src/workerd/jsg/jsg.h
+@@ -743,7 +743,7 @@ concept HasStructTypeScriptDefine = requires { T::_JSG_STRUCT_TS_DEFINE_DO_NOT_U
+ // first '$' gets stripped.
+ #define JSG_STRUCT(...)                                                                            \
+   static constexpr ::workerd::jsg::JsgKind JSG_KIND KJ_UNUSED = ::workerd::jsg::JsgKind::STRUCT;   \
+-  static constexpr char JSG_FOR_EACH(JSG_STRUCT_FIELD_NAME, , __VA_ARGS__);                        \
++  static constexpr auto JSG_FOR_EACH(JSG_STRUCT_FIELD_NAME, , __VA_ARGS__);                        \
+   template <typename TypeWrapper, typename Self>                                                   \
+   using JsgFieldWrappers =                                                                         \
+       ::workerd::jsg::TypeTuple<JSG_FOR_EACH(JSG_STRUCT_FIELD, , __VA_ARGS__)>;                    \
+@@ -787,29 +787,38 @@ concept HasStructTypeScriptDefine = requires { T::_JSG_STRUCT_TS_DEFINE_DO_NOT_U
+     registerMembersInternal<Registry, Self, jsg::GetConfiguration<Self>>(registry, arg);           \
+   }
+ 
++template <size_t N>
++struct StrippedNameHolder {
++  char value[N]{};
++  constexpr StrippedNameHolder(const char (&str)[N]) {
++    size_t offset = (str[0] == '$' ? 1 : 0);
++    for (size_t i = 0; i < N - offset; ++i) {
++      value[i] = str[i + offset];
++    }
++  }
++};
++
+ template <size_t N>
+ inline consteval size_t prefixLengthToStrip(const char (&s)[N]) {
+   return s[0] == '$' ? 1 : 0;
+ }
+ 
+-// This string may not be what's actually exported to v8. For example, if it starts with a `$`, then
+-// this value will still contain the `$` even though the `FieldWrapper` template argument will have
+-// it stripped.
+-#define JSG_STRUCT_FIELD_NAME(_, name) name##_JSG_NAME_DO_NOT_USE_DIRECTLY[] = #name
++#define JSG_STRUCT_FIELD_NAME(_, name)                                                             \
++  name##_JSG_NAME_DO_NOT_USE_DIRECTLY = ::workerd::jsg::StrippedNameHolder(#name)
+ 
+ #define JSG_STRUCT_FIELD_COL(_, name)                                                              \
+   ::workerd::jsg::jsgAddToStructNames<decltype(::kj::instance<Self>().name),                       \
+-      name##_JSG_NAME_DO_NOT_USE_DIRECTLY + ::workerd::jsg::prefixLengthToStrip(#name)>(names)
++      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value>(names)
+ 
+ // (Internal implementation details for JSG_STRUCT.)
+ #define JSG_STRUCT_FIELD(_, name)                                                                  \
+   ::workerd::jsg::FieldWrapper<TypeWrapper, Self, decltype(::kj::instance<Self>().name),           \
+       &Self::name,                                                                                 \
+-      name##_JSG_NAME_DO_NOT_USE_DIRECTLY + ::workerd::jsg::prefixLengthToStrip(#name)>
++      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value>
+ // (Internal implementation details for JSG_STRUCT.)
+ #define JSG_STRUCT_REGISTER_MEMBER(_, name)                                                        \
+   registry.template registerStructProperty<decltype(::kj::instance<Self>().name), &Self::name>(    \
+-      name##_JSG_NAME_DO_NOT_USE_DIRECTLY)
++      name##_JSG_NAME_DO_NOT_USE_DIRECTLY.value)
+ 
+ // Indexes for adding API data to V8's Isolate object.
+ enum SetDataIndex {

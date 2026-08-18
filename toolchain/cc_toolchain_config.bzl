@@ -68,6 +68,8 @@ def _impl(ctx):
         "-Wno-invalid-offsetof",
         "-Wno-unknown-warning-option",
         "-Wno-macro-redefined",
+        "-Wno-nonportable-include-path",
+        "-Wno-quoted-include-in-framework-header",
     ]
 
     cxx_flags = [

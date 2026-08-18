@@ -17,6 +17,7 @@ cc_library(
         "@platforms//os:android": [],
         "//conditions:default": ["SIMDUTF_ATOMIC_REF"],
     }),
+    includes = ["."],
     include_prefix = "third_party/simdutf",
     visibility = ["//visibility:public"],
 )
