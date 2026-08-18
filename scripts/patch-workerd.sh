@@ -73,23 +73,24 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Patch capnp-cpp for Android Bionic memfd_create syscall fallback in deps.MODULE.bazel
+# 4. Integrate capnp-cpp Android memfd_create patch
+echo "--> Integrating capnp-cpp Android Bionic patch..."
+mkdir -p patches/capnp
+cp "${REPO_ROOT}/patches/capnp/0001-android-memfd.patch" patches/capnp/0001-android-memfd.patch
 if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
-  echo "--> Patching capnp-cpp in build/deps/gen/deps.MODULE.bazel..."
   python3 -c '
 with open("build/deps/gen/deps.MODULE.bazel", "r") as f:
     c = f.read()
 
 target = "    name = \"capnp-cpp\","
-patch_cmd = """    name = "capnp-cpp",
-    patch_cmds = [
-        "python3 -c \\x27src = open(\\"src/kj/filesystem.c++\\").read(); open(\\"src/kj/filesystem.c++\\", \\"w\\").write(src.replace(\\"#include <sys/mman.h>    // for memfd_create()\\", \\"#include <sys/mman.h>\\\\n#include <sys/syscall.h>\\\\n#include <unistd.h>\\\\n#if defined(__ANDROID__) && !defined(SYS_memfd_create) && defined(__NR_memfd_create)\\\\n#define SYS_memfd_create __NR_memfd_create\\\\n#endif\\\\n#if defined(__ANDROID__)\\\\nstatic inline int kj_memfd_create(const char* n, unsigned int f) {\\\\n#if defined(SYS_memfd_create)\\\\n  return syscall(SYS_memfd_create, n, f);\\\\n#else\\\\n  errno = ENOSYS;\\\\n  return -1;\\\\n#endif\\\\n}\\\\n#define memfd_create kj_memfd_create\\\\n#endif\\"))\\x27",
-    ],"""
+replacement = """    name = "capnp-cpp",
+    patch_args = ["-p1"],
+    patches = ["//:patches/capnp/0001-android-memfd.patch"],"""
 
-if "patch_cmds =" not in c and target in c:
+if "patches/capnp/0001-android-memfd.patch" not in c and target in c:
     with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
-        f.write(c.replace(target, patch_cmd, 1))
-    print("    Successfully injected capnp-cpp patch_cmds")
+        f.write(c.replace(target, replacement, 1))
+    print("    Registered patches/capnp/0001-android-memfd.patch in build/deps/gen/deps.MODULE.bazel")
 '
 fi
 

@@ -1,0 +1,29 @@
+--- a/src/kj/filesystem.c++
++++ b/src/kj/filesystem.c++
+@@ -29,7 +29,7 @@
+ #include <map>
+ 
+ #if __linux__
+-#include <sys/mman.h>    // for memfd_create()
++#include <sys/mman.h>    // for memfd_create()
+#include <sys/syscall.h>
+#include <unistd.h>
+ #endif  // __linux__
+ 
+ namespace kj {
+@@ -1839,7 +1839,7 @@
+ #if __linux__
+ 
+ Own<File> newMemfdFile(uint flags) {
+-  return newDiskFile(KJ_SYSCALL_FD(memfd_create("kj-memfd", flags | MFD_CLOEXEC)));
++#if defined(__ANDROID__)
+#ifndef SYS_memfd_create
+#define SYS_memfd_create __NR_memfd_create
+#endif
+  return newDiskFile(KJ_SYSCALL_FD(syscall(SYS_memfd_create, "kj-memfd", flags | MFD_CLOEXEC)));
+#else
+  return newDiskFile(KJ_SYSCALL_FD(memfd_create("kj-memfd", flags | MFD_CLOEXEC)));
+#endif
+ }
+ 
+ const InMemoryFileFactory& memfdInMemoryFileFactory() {
