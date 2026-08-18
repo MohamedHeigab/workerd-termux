@@ -73,7 +73,13 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Patch workerd .bazelrc for Android / Bionic build configs
+# 4. Patch build/BUILD.zlib for Android compatibility
+if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
+  echo "--> Applying Android-compatible build/BUILD.zlib..."
+  cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
+fi
+
+# 5. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
