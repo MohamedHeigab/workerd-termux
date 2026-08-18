@@ -11,18 +11,19 @@ index b50bca6..136c20d 100644
      WriteDescriptorResult writeDescriptor(rpc::CapDescriptor::Builder descriptor,
                                            OutgoingFds& fds) override {
 diff --git a/src/kj/filesystem.c++ b/src/kj/filesystem.c++
-index 7c04246..cd1214f 100644
+index 7c04246..4e0e524 100644
 --- a/src/kj/filesystem.c++
 +++ b/src/kj/filesystem.c++
-@@ -30,6 +30,7 @@
+@@ -30,6 +30,8 @@
  
  #if __linux__
  #include <sys/mman.h>    // for memfd_create()
 +#include <sys/syscall.h>
++#include <unistd.h>
  #endif  // __linux__
  
  namespace kj {
-@@ -1839,7 +1840,14 @@ const InMemoryFileFactory& defaultInMemoryFileFactory() {
+@@ -1839,7 +1841,14 @@ const InMemoryFileFactory& defaultInMemoryFileFactory() {
  #if __linux__
  
  Own<File> newMemfdFile(uint flags) {
