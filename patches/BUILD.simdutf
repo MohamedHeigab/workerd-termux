@@ -13,10 +13,7 @@ cc_library(
         "-Wno-unused-function",
         "-Wno-unused-const-variable",
     ],
-    defines = select({
-        "@platforms//os:android": [],
-        "//conditions:default": ["SIMDUTF_ATOMIC_REF"],
-    }),
+    defines = ["SIMDUTF_ATOMIC_REF"],
     includes = ["."],
     include_prefix = "third_party/simdutf",
     visibility = ["//visibility:public"],

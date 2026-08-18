@@ -79,24 +79,38 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 5. Integrate capnp-cpp Android memfd_create patch
-echo "--> Integrating capnp-cpp Android Bionic patch..."
-mkdir -p patches/capnp
+# 5. Integrate capnp-cpp and simdutf patches in deps.MODULE.bazel
+echo "--> Integrating capnp-cpp and simdutf patches..."
+mkdir -p patches/capnp patches/simdutf
 cp "${REPO_ROOT}/patches/capnp/0001-android-memfd.patch" patches/capnp/0001-android-memfd.patch
+cp "${REPO_ROOT}/patches/simdutf/0001-simdutf-atomic-ref.patch" patches/simdutf/0001-simdutf-atomic-ref.patch
+
 if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
   python3 -c '
 with open("build/deps/gen/deps.MODULE.bazel", "r") as f:
     c = f.read()
 
-target = "    name = \"capnp-cpp\","
-replacement = """    name = "capnp-cpp",
+# capnp-cpp
+target_capnp = "    name = \"capnp-cpp\","
+replacement_capnp = """    name = "capnp-cpp",
     patch_args = ["-p1"],
     patches = ["//:patches/capnp/0001-android-memfd.patch"],"""
+if "patches/capnp/0001-android-memfd.patch" not in c and target_capnp in c:
+    c = c.replace(target_capnp, replacement_capnp, 1)
 
-if "patches/capnp/0001-android-memfd.patch" not in c and target in c:
-    with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
-        f.write(c.replace(target, replacement, 1))
-    print("    Registered patches/capnp/0001-android-memfd.patch in build/deps/gen/deps.MODULE.bazel")
+# simdutf
+target_simd = """    name = "simdutf",
+    build_file = "//:build/BUILD.simdutf\","""
+replacement_simd = """    name = "simdutf",
+    build_file = "//:build/BUILD.simdutf",
+    patch_args = ["-p1"],
+    patches = ["//:patches/simdutf/0001-simdutf-atomic-ref.patch"],"""
+if "patches/simdutf/0001-simdutf-atomic-ref.patch" not in c and target_simd in c:
+    c = c.replace(target_simd, replacement_simd, 1)
+
+with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
+    f.write(c)
+print("    Registered patches in build/deps/gen/deps.MODULE.bazel")
 '
 fi
 
