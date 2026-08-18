@@ -73,11 +73,12 @@ if [ -f "build/deps/rust.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Integrate capnp-cpp and simdutf patches in deps.MODULE.bazel
-echo "--> Integrating capnp-cpp and simdutf patches..."
-mkdir -p patches/capnp patches/simdutf
+# 4. Integrate capnp-cpp, simdutf, and perfetto patches in deps.MODULE.bazel
+echo "--> Integrating capnp-cpp, simdutf, and perfetto patches..."
+mkdir -p patches/capnp patches/simdutf patches/perfetto
 cp "${REPO_ROOT}/patches/capnp/0001-android-memfd.patch" patches/capnp/0001-android-memfd.patch
 cp "${REPO_ROOT}/patches/simdutf/0001-simdutf-atomic-ref.patch" patches/simdutf/0001-simdutf-atomic-ref.patch
+cp "${REPO_ROOT}/patches/perfetto/0003-include-task-runner.patch" patches/perfetto/0003-include-task-runner.patch
 
 if [ -f "build/deps/gen/deps.MODULE.bazel" ]; then
   python3 -c '
@@ -101,6 +102,13 @@ replacement_simd = """    name = "simdutf",
     patches = ["//:patches/simdutf/0001-simdutf-atomic-ref.patch"],"""
 if "patches/simdutf/0001-simdutf-atomic-ref.patch" not in c and target_simd in c:
     c = c.replace(target_simd, replacement_simd, 1)
+
+# perfetto
+target_perf = "\"//:patches/perfetto/0002-disable-info-level-logging-re2.patch\","
+replacement_perf = """\"//:patches/perfetto/0002-disable-info-level-logging-re2.patch\",
+        \"//:patches/perfetto/0003-include-task-runner.patch\","""
+if "patches/perfetto/0003-include-task-runner.patch" not in c and target_perf in c:
+    c = c.replace(target_perf, replacement_perf, 1)
 
 with open("build/deps/gen/deps.MODULE.bazel", "w") as f:
     f.write(c)

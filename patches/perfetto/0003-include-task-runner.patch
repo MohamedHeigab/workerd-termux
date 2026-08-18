@@ -1,0 +1,12 @@
+diff --git a/src/tracing/internal/tracing_muxer_impl.h b/src/tracing/internal/tracing_muxer_impl.h
+index 0f37b4a..d950fb9 100644
+--- a/src/tracing/internal/tracing_muxer_impl.h
++++ b/src/tracing/internal/tracing_muxer_impl.h
+@@ -32,6 +32,7 @@
+ #include <vector>
+ 
+ #include "perfetto/base/time.h"
++#include "perfetto/base/task_runner.h"
+ #include "perfetto/ext/base/scoped_file.h"
+ #include "perfetto/ext/base/thread_checker.h"
+ #include "perfetto/ext/tracing/core/basic_types.h"
