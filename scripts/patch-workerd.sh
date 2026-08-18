@@ -15,21 +15,58 @@ fi
 
 cd "${WORKERD_DIR}"
 
-# 1. Apply core workerd patch (BUILD.bazel, server/BUILD.bazel, server/workerd.c++)
-echo "--> Applying workerd bionic patch..."
-if patch -p1 --dry-run < "${REPO_ROOT}/patches/0001-workerd-bionic-support.patch" >/dev/null 2>&1; then
-  patch -p1 < "${REPO_ROOT}/patches/0001-workerd-bionic-support.patch"
-  echo "    Successfully applied 0001-workerd-bionic-support.patch"
-else
-  echo "    Patch 0001 already applied or conflicting, skipping dry-run failure"
+# 1. Update root BUILD.bazel with Android platforms and constraints
+echo "--> Configuring Android platforms in BUILD.bazel..."
+if ! grep -q "name = \"android_aarch64\"" BUILD.bazel; then
+cat << 'EOF' >> BUILD.bazel
+
+# Android platforms for Termux cross-compilation
+platform(
+    name = "android_aarch64",
+    constraint_values = [
+        "@platforms//os:android",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+platform(
+    name = "android_x86_64",
+    constraint_values = [
+        "@platforms//os:android",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "is_android",
+    constraint_values = ["@platforms//os:android"],
+    visibility = ["//visibility:public"],
+)
+EOF
 fi
 
-# 2. Add V8 patches into workerd's patches/v8 directory
+# Update is_unix group to include is_android
+if ! grep -q '":is_android"' BUILD.bazel; then
+  sed -i '/":is_macos",/a \        ":is_android",' BUILD.bazel
+fi
+
+# 2. Update src/workerd/server/workerd.c++ for Android exe resolution
+echo "--> Patching src/workerd/server/workerd.c++..."
+if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
+  sed -i '/KJ_IF_SOME(link, fs.getRoot().tryReadlink(kj::Path({"proc", "self", "exe"}))) {/i \
+#if defined(__ANDROID__)\
+    KJ_IF_SOME(link, fs.getRoot().tryReadlink(kj::Path({"proc", "self", "exe"}))) {\
+      return tryOpenExe(fs, link);\
+    }\
+#endif' src/workerd/server/workerd.c++ || true
+fi
+
+# 3. Add V8 patches into workerd's patches/v8 directory
 echo "--> Integrating V8 Termux patch..."
 mkdir -p patches/v8
 cp "${REPO_ROOT}/patches/0002-v8-termux-bionic.patch" patches/v8/0040-termux-bionic-support.patch
 
-# 3. Register the new V8 patch in v8.MODULE.bazel if not already present
+# 4. Register the new V8 patch in v8.MODULE.bazel if not already present
 if [ -f "build/deps/v8.MODULE.bazel" ]; then
   if ! grep -q "0040-termux-bionic-support.patch" build/deps/v8.MODULE.bazel; then
     echo "--> Registering 0040-termux-bionic-support.patch in build/deps/v8.MODULE.bazel"
@@ -37,7 +74,7 @@ if [ -f "build/deps/v8.MODULE.bazel" ]; then
   fi
 fi
 
-# 4. Patch workerd .bazelrc for Android / Bionic build configs
+# 5. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc

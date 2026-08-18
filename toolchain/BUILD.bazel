@@ -2,6 +2,23 @@ package(default_visibility = ["//visibility:public"])
 
 load(":cc_toolchain_config.bzl", "android_cc_toolchain_config")
 
+# Platforms defined inside toolchain package as well
+platform(
+    name = "android_aarch64",
+    constraint_values = [
+        "@platforms//os:android",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+platform(
+    name = "android_x86_64",
+    constraint_values = [
+        "@platforms//os:android",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
 filegroup(
     name = "empty",
     srcs = [],
