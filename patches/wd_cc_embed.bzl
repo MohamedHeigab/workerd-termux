@@ -34,50 +34,48 @@ def wd_cc_embed(name, src, base_name = "", is_text = None, **kwargs):
         name = embed_filename + "_embed_c_gen",
         srcs = [src],
         outs = [base_name + ".embed.c"],
-        cmd = """python3 -c '
-import sys
-src_path = sys.argv[1]
-out_path = sys.argv[2]
-embed_name = sys.argv[3]
-pod_type = sys.argv[4]
-is_text = sys.argv[5] == "True"
-with open(src_path, "rb") as f:
-    data = f.read()
-with open(out_path, "w") as f:
-    f.write("#include <stddef.h>\\n")
-    f.write("__attribute__ ((aligned (8))) const " + pod_type + " " + embed_name + "_begin[] = {\\n")
-    if is_text:
-        bytes_list = [str(b) for b in data]
-        if not data.endswith(b"\\0"):
-            bytes_list.append("0")
-        f.write(", ".join(bytes_list) + "\\n")
-    else:
-        f.write(", ".join(str(b) for b in data) + "\\n")
-    f.write("};\\n")
-    f.write("size_t " + embed_name + "_size = " + str(len(data)) + ";\\n")
-' "$(location " + src + ")" "$@" "{embed_name}" "{pod_data_type}" "{is_text}" """.format(
-            embed_name = embed_name,
-            pod_data_type = pod_data_type,
-            is_text = str(is_text),
+        cmd = (
+            "python3 -c '\n" +
+            "import sys\n" +
+            "src_path, out_path, ename, ptype, is_txt = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], (sys.argv[5] == \"True\")\n" +
+            "with open(src_path, \"rb\") as f:\n" +
+            "    data = f.read()\n" +
+            "with open(out_path, \"w\") as f:\n" +
+            "    f.write(\"#include <stddef.h>\\n\")\n" +
+            "    f.write(\"__attribute__ ((aligned (8))) const \" + ptype + \" \" + ename + \"_begin[] = {\")\n" +
+            "    if is_txt:\n" +
+            "        vals = [str(b) for b in data]\n" +
+            "        if not data.endswith(b\"\\0\"):\n" +
+            "            vals.append(\"0\")\n" +
+            "        f.write(\", \".join(vals))\n" +
+            "    else:\n" +
+            "        f.write(\", \".join(str(b) for b in data))\n" +
+            "    f.write(\"};\\n\")\n" +
+            "    f.write(\"size_t \" + ename + \"_size = \" + str(len(data)) + \";\\n\")\n" +
+            "' \"$(location " + src + ")\" \"$@\" \"" + embed_name + "\" \"" + pod_data_type + "\" \"" + str(is_text) + "\""
         ),
+    )
+
+    header_content = (
+        "#pragma once\n" +
+        "#include <kj/common.h>\n" +
+        "#include <kj/string.h>\n" +
+        "#include <stddef.h>\n" +
+        "#ifdef __cplusplus\n" +
+        "extern \"C\" {\n" +
+        "#endif\n" +
+        "extern const " + pod_data_type + " " + embed_name + "_begin[];\n" +
+        "extern size_t " + embed_name + "_size;\n" +
+        "#define " + embed_name + " (" + data_type + "(" + embed_name + "_begin, " + embed_name + "_size))\n" +
+        "#ifdef __cplusplus\n" +
+        "}\n" +
+        "#endif"
     )
 
     write_file(
         name = embed_filename + "@h",
         out = base_name + ".embed.h",
-        content = ["""#pragma once
-#include <kj/common.h>
-#include <kj/string.h>
-#include <stddef.h>
-#ifdef __cplusplus
-extern "C" {{
-#endif
-extern const {pod_data_type} {embed_name}_begin[];
-extern size_t {embed_name}_size;
-#define {embed_name} ({data_type}({embed_name}_begin, {embed_name}_size))
-#ifdef __cplusplus
-}}
-#endif""".format(embed_name = embed_name, data_type = data_type, pod_data_type = pod_data_type)],
+        content = [header_content],
     )
 
     wd_cc_library(
