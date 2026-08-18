@@ -100,13 +100,19 @@ if [ -f "${REPO_ROOT}/patches/BUILD.zlib" ]; then
   cp "${REPO_ROOT}/patches/BUILD.zlib" build/BUILD.zlib
 fi
 
-# 6. Patch build/wd_cc_embed.bzl for portable embed generation
+# 6. Patch build/BUILD.simdutf for Android compatibility
+if [ -f "${REPO_ROOT}/patches/BUILD.simdutf" ]; then
+  echo "--> Applying Android-compatible build/BUILD.simdutf..."
+  cp "${REPO_ROOT}/patches/BUILD.simdutf" build/BUILD.simdutf
+fi
+
+# 7. Patch build/wd_cc_embed.bzl for portable embed generation
 if [ -f "${REPO_ROOT}/patches/wd_cc_embed.bzl" ]; then
   echo "--> Applying portable build/wd_cc_embed.bzl..."
   cp "${REPO_ROOT}/patches/wd_cc_embed.bzl" build/wd_cc_embed.bzl
 fi
 
-# 7. Patch workerd .bazelrc for Android / Bionic build configs
+# 8. Patch workerd .bazelrc for Android / Bionic build configs
 echo "--> Appending Android Bionic configuration to .bazelrc..."
 if ! grep -q "build:android" .bazelrc; then
 cat << 'EOF' >> .bazelrc
