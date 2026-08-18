@@ -1,24 +1,11 @@
-diff --git a/src/base/debug/stack_trace_android.cc b/src/base/debug/stack_trace_android.cc
-index 16fbf98..00334f1 100644
---- a/src/base/debug/stack_trace_android.cc
-+++ b/src/base/debug/stack_trace_android.cc
-@@ -12,7 +12,7 @@
- #include <string.h>
- #include <unwind.h>
+diff --git a/include/v8config.h b/include/v8config.h
+index b36169f..99d8dd0 100644
+--- a/include/v8config.h
++++ b/include/v8config.h
+@@ -22,6 +22,46 @@ path. Add it with -I<path> to the command line
+ #endif
  
--#include <src/base/platform/platform.h>
-+#include "src/base/platform/platform.h"
- 
- #include <iomanip>
- #include <ostream>
-diff --git a/src/base/macros.h b/src/base/macros.h
-index c2c24e8..69cc4f8 100644
---- a/src/base/macros.h
-+++ b/src/base/macros.h
-@@ -13,6 +13,48 @@
- #include "src/base/compiler-specific.h"
- #include "src/base/logging.h"
- 
+ #include <memory>
 +#include <atomic>
 +
 +#if !defined(__cpp_lib_atomic_ref) && !defined(_ATOMIC_REF_SHIM_DEFINED)
@@ -59,8 +46,19 @@ index c2c24e8..69cc4f8 100644
 +};
 +}  // namespace std
 +#endif
-+
-+
- // No-op macro which is used to work around MSVC's funky VA_ARGS support.
- #define EXPAND(X) X
+ // clang-format off
  
+ // Platform headers for feature detection below.
+diff --git a/src/base/debug/stack_trace_android.cc b/src/base/debug/stack_trace_android.cc
+index 16fbf98..00334f1 100644
+--- a/src/base/debug/stack_trace_android.cc
++++ b/src/base/debug/stack_trace_android.cc
+@@ -12,7 +12,7 @@
+ #include <string.h>
+ #include <unwind.h>
+ 
+-#include <src/base/platform/platform.h>
++#include "src/base/platform/platform.h"
+ 
+ #include <iomanip>
+ #include <ostream>
