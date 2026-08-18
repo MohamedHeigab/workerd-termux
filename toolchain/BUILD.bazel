@@ -1,8 +1,9 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@rules_cc//cc:defs.bzl", "cc_toolchain")
 load(":cc_toolchain_config.bzl", "android_cc_toolchain_config")
 
-# Platforms defined inside toolchain package as well
+# Platforms defined inside toolchain package
 platform(
     name = "android_aarch64",
     constraint_values = [
