@@ -43,15 +43,33 @@ mkdir -p "${WORKERD_DIR}/toolchain/wrappers"
 cp "${REPO_ROOT}/toolchain/cc_toolchain_config.bzl" "${WORKERD_DIR}/toolchain/"
 sed "s|\$\$ANDROID_NDK_HOME\$\$|${ANDROID_NDK_HOME}|g" "${REPO_ROOT}/toolchain/BUILD.bazel" > "${WORKERD_DIR}/toolchain/BUILD.bazel"
 
-# 2. Create direct toolchain wrappers passing --target explicitly
+# Create dummy libpthread.a and librt.a for Bionic compatibility (pthread/rt are part of libc in Bionic)
+"${NDK_BIN}/llvm-ar" cr "${WORKERD_DIR}/toolchain/libpthread.a" 2>/dev/null || true
+"${NDK_BIN}/llvm-ar" cr "${WORKERD_DIR}/toolchain/librt.a" 2>/dev/null || true
+
+# 2. Create direct toolchain wrappers passing --target explicitly and filtering non-Bionic flags
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang"
 #!/usr/bin/env bash
-exec "${CLANG_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\$@"
+args=()
+for arg in "\$@"; do
+  if [ "\$arg" = "-lpthread" ] || [ "\$arg" = "-lrt" ]; then
+    continue
+  fi
+  args+=("\$arg")
+done
+exec "${CLANG_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\${args[@]}"
 EOF
 
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang++"
 #!/usr/bin/env bash
-exec "${CLANGXX_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\$@"
+args=()
+for arg in "\$@"; do
+  if [ "\$arg" = "-lpthread" ] || [ "\$arg" = "-lrt" ]; then
+    continue
+  fi
+  args+=("\$arg")
+done
+exec "${CLANGXX_EXE}" --target="${TARGET_TRIPLE}${API_LEVEL}" "\${args[@]}"
 EOF
 
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang-cpp"
