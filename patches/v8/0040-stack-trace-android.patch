@@ -107,3 +107,25 @@ index 29f81cb..cd301fa 100644
      return []<size_t... Is>(std::index_sequence<Is...>) {
        return std::tuple_cat([]<size_t I>() {
          constexpr auto id = static_cast<Operand>(I);
+diff --git a/src/runtime/runtime-literals.cc b/src/runtime/runtime-literals.cc
+index e45852e..054606a 100644
+--- a/src/runtime/runtime-literals.cc
++++ b/src/runtime/runtime-literals.cc
+@@ -354,7 +354,7 @@ Handle<JSObject> CreateObjectLiteralWithNullProto(
+     Isolate* isolate,
+     DirectHandle<ObjectBoilerplateDescription> object_boilerplate_description,
+     int flags, AllocationType allocation) {
+-  DirectHandle<NativeContext> native_context = isolate->native_context();
++  [[maybe_unused]] DirectHandle<NativeContext> native_context = isolate->native_context();
+   bool use_fast_elements = (flags & ObjectLiteral::kFastElements) != 0;
+   int number_of_properties =
+       object_boilerplate_description->backing_store_size();
+@@ -516,7 +516,7 @@ Handle<JSObject> CreateObjectLiteral(
+     Isolate* isolate,
+     DirectHandle<ObjectBoilerplateDescription> object_boilerplate_description,
+     int flags, AllocationType allocation) {
+-  DirectHandle<NativeContext> native_context = isolate->native_context();
++  [[maybe_unused]] DirectHandle<NativeContext> native_context = isolate->native_context();
+   bool has_null_prototype = (flags & ObjectLiteral::kHasNullPrototype) != 0;
+ 
+   if (has_null_prototype) {
