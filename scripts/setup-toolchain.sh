@@ -43,9 +43,31 @@ mkdir -p "${WORKERD_DIR}/toolchain/wrappers"
 cp "${REPO_ROOT}/toolchain/cc_toolchain_config.bzl" "${WORKERD_DIR}/toolchain/"
 sed "s|\$\$ANDROID_NDK_HOME\$\$|${ANDROID_NDK_HOME}|g" "${REPO_ROOT}/toolchain/BUILD.bazel" > "${WORKERD_DIR}/toolchain/BUILD.bazel"
 
-# Create dummy libpthread.a and librt.a for Bionic compatibility (pthread/rt are part of libc in Bionic)
-"${NDK_BIN}/llvm-ar" cr "${WORKERD_DIR}/toolchain/libpthread.a" 2>/dev/null || true
-"${NDK_BIN}/llvm-ar" cr "${WORKERD_DIR}/toolchain/librt.a" 2>/dev/null || true
+# Create dummy libpthread, librt, libresolv, libutil archives and linker scripts for Bionic compatibility
+SYSROOT="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+DUMMY_DIR="$(mktemp -d)"
+"${NDK_BIN}/llvm-ar" cr "${DUMMY_DIR}/libdummy.a" 2>/dev/null || true
+echo "INPUT(-lc)" > "${DUMMY_DIR}/libdummy.so"
+
+for lib in libpthread librt libresolv libutil; do
+  cp "${DUMMY_DIR}/libdummy.a" "${WORKERD_DIR}/toolchain/${lib}.a" 2>/dev/null || true
+  cp "${DUMMY_DIR}/libdummy.so" "${WORKERD_DIR}/toolchain/${lib}.so" 2>/dev/null || true
+done
+
+if [ -d "${SYSROOT}/usr/lib" ]; then
+  for target_dir in \
+    "${SYSROOT}/usr/lib" \
+    "${SYSROOT}/usr/lib"/*-linux-android* \
+    "${SYSROOT}/usr/lib"/*-linux-android*/*; do
+    if [ -d "${target_dir}" ]; then
+      for lib in libpthread librt libresolv libutil; do
+        cp "${DUMMY_DIR}/libdummy.a" "${target_dir}/${lib}.a" 2>/dev/null || true
+        cp "${DUMMY_DIR}/libdummy.so" "${target_dir}/${lib}.so" 2>/dev/null || true
+      done
+    fi
+  done
+fi
+rm -rf "${DUMMY_DIR}"
 
 # 2. Create direct toolchain wrappers passing --target explicitly and filtering non-Bionic flags
 cat << EOF > "${WORKERD_DIR}/toolchain/wrappers/clang"

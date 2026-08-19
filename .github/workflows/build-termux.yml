@@ -74,8 +74,9 @@ jobs:
 
       - name: Install Host Tools and LLVM 19
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo sed -i 's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout="30" update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout="30" install -y --no-install-recommends \
             build-essential \
             clang-19 \
             lld-19 \
@@ -107,6 +108,9 @@ jobs:
           ndk-version: r28
           local-cache: true
           add-to-path: true
+
+      - name: Initialize Bazel Disk Cache Dir
+        run: mkdir -p ~/bazel-disk-cache
 
       - name: Restore Bazel Disk Cache
         uses: actions/cache/restore@v4
