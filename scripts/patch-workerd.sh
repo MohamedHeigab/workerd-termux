@@ -54,7 +54,7 @@ if ! grep -q '":is_android"' BUILD.bazel; then
   sed -i '/":is_macos",/a \        ":is_android",' BUILD.bazel
 fi
 
-# 2. Update src/workerd/server/workerd.c++ and src/workerd/jsg/memory.h
+# 2. Update src/workerd/server/workerd.c++ and fix Clang 19 noexcept = default destructors
 echo "--> Patching workerd source files..."
 if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
   sed -i '/KJ_IF_SOME(link, fs.getRoot().tryReadlink(kj::Path({"proc", "self", "exe"}))) {/i \
@@ -65,10 +65,22 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
 #endif' src/workerd/server/workerd.c++ || true
 fi
 
-if [ -f "src/workerd/jsg/memory.h" ]; then
-  sed -i 's|~HeapSnapshotActivity() noexcept(true) = default;|~HeapSnapshotActivity() noexcept {}|g' src/workerd/jsg/memory.h
-  sed -i 's|~HeapSnapshotWriter() noexcept(true) = default;|~HeapSnapshotWriter() noexcept {}|g' src/workerd/jsg/memory.h
-fi
+# Fix Clang 19 exception specification deduction for defaulted destructors across all workerd headers
+python3 -c '
+import os
+for root, _, files in os.walk("src/workerd"):
+    for file in files:
+        if file.endswith(".h") or file.endswith(".c++") or file.endswith(".cc"):
+            path = os.path.join(root, file)
+            with open(path, "r") as f:
+                c = f.read()
+            c_new = c.replace("noexcept(false) = default;", "noexcept(false) {}")
+            c_new = c_new.replace("noexcept(true) = default;", "noexcept {}")
+            if c_new != c:
+                with open(path, "w") as f:
+                    f.write(c_new)
+                print(f"    Fixed noexcept destructor in {path}")
+'
 
 # 3. Add Android target triples to rust.MODULE.bazel
 if [ -f "build/deps/rust.MODULE.bazel" ]; then
