@@ -26,6 +26,33 @@ index b50bca6..c2254c7 100644
  
      Request<AnyPointer, AnyPointer> newCall(
          uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
+diff --git a/src/kj/common.h b/src/kj/common.h
+index 9cf223e..28934e2 100644
+--- a/src/kj/common.h
++++ b/src/kj/common.h
+@@ -1344,20 +1344,9 @@ public:
+       ctor(value, other.value);
+     }
+   }
+-  inline ~NullableValue()
+-#if _MSC_VER && !defined(__clang__)
+-      // TODO(msvc): MSVC has a hard time with noexcept specifier expressions that are more complex
+-      //   than `true` or `false`. We had a workaround for VS2015, but VS2017 regressed.
+-      noexcept(false)
+-#else
+-      noexcept(noexcept(instance<T&>().~T()))
+-#endif
++  inline ~NullableValue() noexcept(false)
+   {
+-    if constexpr (noexcept(instance<T&>().~T())) {
+-      if (isSet) { dtor(value); }
+-    } else {
+-      destroy();
+-    }
++    destroy();
+   }
+ 
+   inline T& operator*() & { return value; }
 diff --git a/src/kj/filesystem.c++ b/src/kj/filesystem.c++
 index 7c04246..4e0e524 100644
 --- a/src/kj/filesystem.c++
