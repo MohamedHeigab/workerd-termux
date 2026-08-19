@@ -28,11 +28,14 @@ fi
 echo "--> Target Platform: ${TARGET_PLATFORM}"
 echo "--> Bazel CPU:       ${BAZEL_CPU}"
 
+mkdir -p "${HOME}/bazel-disk-cache"
+
 echo "--> Invoking Bazel..."
 bazel build //src/workerd/server:workerd \
   --config=release_android \
   --platforms=${TARGET_PLATFORM} \
   --cpu=${BAZEL_CPU} \
+  --disk_cache="${HOME}/bazel-disk-cache" \
   --//src/workerd/server:use_tcmalloc=False \
   --//src/workerd/server:use_transpiler=False \
   --verbose_failures \

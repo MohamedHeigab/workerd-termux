@@ -102,6 +102,14 @@ jobs:
           local-cache: true
           add-to-path: true
 
+      - name: Restore Bazel Disk Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/bazel-disk-cache
+          key: bazel-disk-cache-${{ matrix.arch }}-${{ github.run_id }}
+          restore-keys: |
+            bazel-disk-cache-${{ matrix.arch }}-
+
       - name: Determine workerd version
         id: get-version
         run: |
@@ -150,6 +158,13 @@ jobs:
         run: |
           chmod +x scripts/build-workerd.sh
           ./scripts/build-workerd.sh workerd-src
+
+      - name: Save Bazel Disk Cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/bazel-disk-cache
+          key: bazel-disk-cache-${{ matrix.arch }}-${{ github.run_id }}
 
       - name: Verify Compiled Binary
         run: |
@@ -200,29 +215,14 @@ jobs:
       - name: Prepare Release Assets
         run: |
           mkdir -p release-assets
-          find all-artifacts -type f -exec cp {} release-assets/ \;
-          cd release-assets
-          sha256sum * | grep -v SHA256SUMS > SHA256SUMS.all || true
-          cat SHA256SUMS.all
+          find all-artifacts -type f -name "*.deb" -exec cp {} release-assets/ \;
+          find all-artifacts -type f -name "*.tar.gz" -exec cp {} release-assets/ \;
+          find all-artifacts -type f -name "SHA256SUMS" -exec cat {} + > release-assets/SHA256SUMS || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
           files: release-assets/*
-          name: "workerd for Termux ${{ github.ref_name }}"
-          body: |
-            ## Cloudflare workerd for Android (Termux)
-            
-            Built with Android Bionic libc and patched for Termux.
-            
-            ### Installation in Termux:
-            ```bash
-            # Download the .deb for your architecture (aarch64 for most devices):
-            pkg install ./workerd_${{ github.ref_name }}_aarch64.deb
-            
-            # Verify installation:
-            workerd --version
-            ```
           draft: false
           prerelease: false
+          generate_release_notes: true
