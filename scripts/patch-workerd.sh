@@ -258,6 +258,7 @@ if [ -f "build/wd_js_bundle.bzl" ]; then
 fi
 if [ -f "patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch" ]; then
   sed -i 's|+    return "target"|+    return "exec"|g' patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch
+  sed -i 's|+    # cfg = v8_target_cpu_transition,|+    cfg = v8_target_cpu_transition,|g' patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch
 fi
 
 # 7. Patch build/BUILD.zlib for Android compatibility
