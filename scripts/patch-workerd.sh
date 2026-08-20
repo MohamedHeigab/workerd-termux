@@ -75,6 +75,20 @@ if [ -f "src/workerd/io/hibernation-manager.c++" ] && ! grep -q '<workerd/api/bl
   sed -i 's|#include "hibernation-manager.h"|#include <workerd/api/blob.h>\n#include "hibernation-manager.h"|g' src/workerd/io/hibernation-manager.c++
 fi
 
+# Fix InspectorClient virtual destructor exception specification in worker.c++ for Clang 19
+if [ -f "src/workerd/io/worker.c++" ]; then
+  python3 -c '
+with open("src/workerd/io/worker.c++", "r") as f:
+    c = f.read()
+target = "class Worker::InspectorClient: public v8_inspector::V8InspectorClient {\n public:"
+replacement = "class Worker::InspectorClient: public v8_inspector::V8InspectorClient {\n public:\n  ~InspectorClient() noexcept override {}"
+if target in c:
+    with open("src/workerd/io/worker.c++", "w") as f:
+        f.write(c.replace(target, replacement, 1))
+    print("    Fixed InspectorClient destructor in src/workerd/io/worker.c++")
+'
+fi
+
 # Fix Clang 19 exception specification deduction for defaulted destructors across all workerd headers
 python3 -c '
 import os
