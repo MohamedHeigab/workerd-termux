@@ -116,6 +116,50 @@ if target in c:
 '
 fi
 
+# Fix htobe32 / htobe64 / endianness function definitions for Android Bionic in endianness.c++
+if [ -f "src/workerd/api/crypto/endianness.c++" ]; then
+  python3 -c '
+with open("src/workerd/api/crypto/endianness.c++", "r") as f:
+    c = f.read()
+target = "#if defined(__linux__) || defined(__CYGWIN__)"
+replacement = """#if defined(__ANDROID__)
+
+#undef htobe16
+#undef htole16
+#undef be16toh
+#undef le16toh
+#undef htobe32
+#undef htole32
+#undef be32toh
+#undef le32toh
+#undef htobe64
+#undef htole64
+#undef be64toh
+#undef le64toh
+
+uint16_t htobe16(uint16_t x) { return __builtin_bswap16(x); }
+uint16_t htole16(uint16_t x) { return x; }
+uint16_t be16toh(uint16_t x) { return __builtin_bswap16(x); }
+uint16_t le16toh(uint16_t x) { return x; }
+
+uint32_t htobe32(uint32_t x) { return __builtin_bswap32(x); }
+uint32_t htole32(uint32_t x) { return x; }
+uint32_t be32toh(uint32_t x) { return __builtin_bswap32(x); }
+uint32_t le32toh(uint32_t x) { return x; }
+
+uint64_t htobe64(uint64_t x) { return __builtin_bswap64(x); }
+uint64_t htole64(uint64_t x) { return x; }
+uint64_t be64toh(uint64_t x) { return __builtin_bswap64(x); }
+uint64_t le64toh(uint64_t x) { return x; }
+
+#elif defined(__linux__) || defined(__CYGWIN__)"""
+if target in c and "defined(__ANDROID__)" not in c:
+    with open("src/workerd/api/crypto/endianness.c++", "w") as f:
+        f.write(c.replace(target, replacement, 1))
+    print("    Fixed endianness.c++ definitions for Android Bionic")
+'
+fi
+
 # Fix Clang 19 exception specification deduction for defaulted destructors across all workerd headers
 python3 -c '
 import os
