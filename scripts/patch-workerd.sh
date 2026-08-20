@@ -158,6 +158,9 @@ echo "--> Configuring cross-compilation execution platforms for generator binari
 if [ -f "build/run_binary_target.bzl" ]; then
   sed -i 's|cfg = "target"|cfg = "exec"|g' build/run_binary_target.bzl
 fi
+if [ -f "build/wd_js_bundle.bzl" ]; then
+  sed -i 's|cfg = "target"|cfg = "exec"|g' build/wd_js_bundle.bzl
+fi
 if [ -f "patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch" ]; then
   sed -i 's|+    return "target"|+    return "exec"|g' patches/v8/0005-Speed-up-V8-bazel-build-by-always-using-target-cfg.patch
 fi
