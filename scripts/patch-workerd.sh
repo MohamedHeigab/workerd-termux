@@ -65,6 +65,33 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
 #endif' src/workerd/server/workerd.c++ || true
 fi
 
+# Fix incomplete type Blob in MessageEvent by declaring destructor out-of-line in events.h/events.c++
+if [ -f "src/workerd/api/events.h" ]; then
+  python3 -c '
+with open("src/workerd/api/events.h", "r") as f:
+    c = f.read()
+target = "class MessageEvent final: public Event {\n public:"
+replacement = "class MessageEvent final: public Event {\n public:\n  ~MessageEvent() noexcept override;"
+if target in c and "~MessageEvent()" not in c:
+    with open("src/workerd/api/events.h", "w") as f:
+        f.write(c.replace(target, replacement, 1))
+    print("    Declared out-of-line ~MessageEvent() in src/workerd/api/events.h")
+'
+fi
+
+if [ -f "src/workerd/api/events.c++" ]; then
+  python3 -c '
+with open("src/workerd/api/events.c++", "r") as f:
+    c = f.read()
+target = "OpenEvent::OpenEvent(): Event(kOpenEventName) {}"
+replacement = "OpenEvent::OpenEvent(): Event(kOpenEventName) {}\n\nMessageEvent::~MessageEvent() noexcept = default;"
+if target in c and "MessageEvent::~MessageEvent()" not in c:
+    with open("src/workerd/api/events.c++", "w") as f:
+        f.write(c.replace(target, replacement, 1))
+    print("    Defined ~MessageEvent() in src/workerd/api/events.c++")
+'
+fi
+
 # Fix incomplete type Blob in hibernation-manager and related headers for Clang 19 template destructor instantiation
 for h in src/workerd/io/hibernation-manager.h src/workerd/io/legacy-hibernation-manager.h src/workerd/api/hibernatable-web-socket.h; do
   if [ -f "$h" ] && ! grep -q '<workerd/api/blob.h>' "$h"; then
