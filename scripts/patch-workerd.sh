@@ -54,7 +54,7 @@ if ! grep -q '":is_android"' BUILD.bazel; then
   sed -i '/":is_macos",/a \        ":is_android",' BUILD.bazel
 fi
 
-# 2. Update src/workerd/server/workerd.c++ and fix Clang 19 noexcept = default destructors
+# 2. Update src/workerd/server/workerd.c++ and fix Clang 19 noexcept = default destructors & incomplete types
 echo "--> Patching workerd source files..."
 if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
   sed -i '/KJ_IF_SOME(link, fs.getRoot().tryReadlink(kj::Path({"proc", "self", "exe"}))) {/i \
@@ -63,6 +63,17 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
       return tryOpenExe(fs, link);\
     }\
 #endif' src/workerd/server/workerd.c++ || true
+fi
+
+# Fix incomplete type Blob in events.h, web-socket.h, filesystem.h for Clang 19 template destructor instantiation
+if [ -f "src/workerd/api/events.h" ]; then
+  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/events.h
+fi
+if [ -f "src/workerd/api/web-socket.h" ]; then
+  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/web-socket.h
+fi
+if [ -f "src/workerd/api/filesystem.h" ]; then
+  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/filesystem.h
 fi
 
 # Fix Clang 19 exception specification deduction for defaulted destructors across all workerd headers
