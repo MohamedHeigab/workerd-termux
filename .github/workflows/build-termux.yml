@@ -139,8 +139,14 @@ jobs:
           git clone --depth 1 https://github.com/cloudflare/workerd.git workerd-src
           cd workerd-src
           WORKERD_COMMIT=$(git rev-parse --short HEAD)
-          WORKERD_VERSION_STR=$(git describe --tags --always 2>/dev/null || echo "1.0.0-${WORKERD_COMMIT}")
-          echo "WORKERD_VERSION=${WORKERD_VERSION_STR#v}" >> $GITHUB_ENV
+          WORKERD_DATE=$(date -u +%Y%m%d)
+          WORKERD_TAG=$(git describe --tags --exact-match 2>/dev/null || true)
+          if [ -n "${WORKERD_TAG}" ] && [[ "${WORKERD_TAG#v}" =~ ^[0-9] ]]; then
+            WORKERD_VERSION_STR="${WORKERD_TAG#v}"
+          else
+            WORKERD_VERSION_STR="1.${WORKERD_DATE}.${WORKERD_COMMIT}"
+          fi
+          echo "WORKERD_VERSION=${WORKERD_VERSION_STR}" >> $GITHUB_ENV
           echo "WORKERD_COMMIT=${WORKERD_COMMIT}" >> $GITHUB_ENV
 
       - name: Apply Termux Bionic Patches

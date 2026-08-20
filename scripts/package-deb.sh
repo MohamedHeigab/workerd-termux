@@ -7,11 +7,17 @@ WORKERD_DIR="${1:-${REPO_ROOT}/workerd-src}"
 VERSION="${2:-1.0.0}"
 ARCH="${3:-aarch64}"
 
+# Debian version MUST start with a digit (deb-version(7))
+DEB_VERSION="${VERSION}"
+if [[ ! "${DEB_VERSION}" =~ ^[0-9] ]]; then
+  DEB_VERSION="1.0.0+${DEB_VERSION}"
+fi
+
 DIST_DIR="${REPO_ROOT}/dist"
 BINARY_SOURCE="${WORKERD_DIR}/bazel-bin/src/workerd/server/workerd"
 
 echo "=== Packaging workerd for Termux (${ARCH}) ==="
-echo "Version: ${VERSION}"
+echo "Version: ${VERSION} (Debian: ${DEB_VERSION})"
 echo "Binary:  ${BINARY_SOURCE}"
 
 if [ ! -f "${BINARY_SOURCE}" ]; then
@@ -23,7 +29,7 @@ mkdir -p "${DIST_DIR}"
 
 # 1. Package Termux Debian (.deb)
 PKG_NAME="workerd"
-PKG_DIR="${DIST_DIR}/${PKG_NAME}_${VERSION}_${ARCH}"
+PKG_DIR="${DIST_DIR}/${PKG_NAME}_${DEB_VERSION}_${ARCH}"
 mkdir -p "${PKG_DIR}/DEBIAN"
 mkdir -p "${PKG_DIR}/data/data/com.termux/files/usr/bin"
 mkdir -p "${PKG_DIR}/data/data/com.termux/files/usr/share/doc/workerd"
@@ -48,7 +54,7 @@ EOF
 INSTALLED_SIZE=$(du -sk "${PKG_DIR}/data" | cut -f1)
 cat << EOF > "${PKG_DIR}/DEBIAN/control"
 Package: ${PKG_NAME}
-Version: ${VERSION}
+Version: ${DEB_VERSION}
 Architecture: ${ARCH}
 Maintainer: Termux Community
 Installed-Size: ${INSTALLED_SIZE}
@@ -63,7 +69,7 @@ Description: Cloudflare Workers JavaScript/Wasm runtime (built for Termux with B
 EOF
 
 echo "--> Building .deb package..."
-dpkg-deb --build --root-owner-group "${PKG_DIR}" "${DIST_DIR}/${PKG_NAME}_${VERSION}_${ARCH}.deb"
+dpkg-deb --build --root-owner-group "${PKG_DIR}" "${DIST_DIR}/${PKG_NAME}_${DEB_VERSION}_${ARCH}.deb"
 rm -rf "${PKG_DIR}"
 
 # 2. Package standalone tarball
