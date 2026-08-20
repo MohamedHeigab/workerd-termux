@@ -65,15 +65,14 @@ if ! grep -q "defined(__ANDROID__)" src/workerd/server/workerd.c++; then
 #endif' src/workerd/server/workerd.c++ || true
 fi
 
-# Fix incomplete type Blob in events.h, web-socket.h, filesystem.h for Clang 19 template destructor instantiation
-if [ -f "src/workerd/api/events.h" ]; then
-  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/events.h
-fi
-if [ -f "src/workerd/api/web-socket.h" ]; then
-  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/web-socket.h
-fi
-if [ -f "src/workerd/api/filesystem.h" ]; then
-  sed -i 's|class Blob;|#include <workerd/api/blob.h>|g' src/workerd/api/filesystem.h
+# Fix incomplete type Blob in hibernation-manager and related headers for Clang 19 template destructor instantiation
+for h in src/workerd/io/hibernation-manager.h src/workerd/io/legacy-hibernation-manager.h src/workerd/api/hibernatable-web-socket.h; do
+  if [ -f "$h" ] && ! grep -q '<workerd/api/blob.h>' "$h"; then
+    sed -i 's|#include <workerd/api/web-socket.h>|#include <workerd/api/blob.h>\n#include <workerd/api/web-socket.h>|g' "$h"
+  fi
+done
+if [ -f "src/workerd/io/hibernation-manager.c++" ] && ! grep -q '<workerd/api/blob.h>' "src/workerd/io/hibernation-manager.c++"; then
+  sed -i 's|#include "hibernation-manager.h"|#include <workerd/api/blob.h>\n#include "hibernation-manager.h"|g' src/workerd/io/hibernation-manager.c++
 fi
 
 # Fix Clang 19 exception specification deduction for defaulted destructors across all workerd headers
